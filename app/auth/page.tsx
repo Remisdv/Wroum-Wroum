@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation"; // Import useRouter
 import { NavBar } from "@/components/nav-bar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,7 @@ import { Mail, Lock, User, ArrowRight } from "lucide-react";
 
 export default function AuthPage() {
   const { data: session } = useSession();
+  const router = useRouter(); // Initialize useRouter
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({ nom: "", email: "", password: "" });
 
@@ -73,6 +75,9 @@ export default function AuthPage() {
           {session ? (
             <div className="text-center">
               <p className="mb-4">Bienvenue, {session.user?.email} !</p>
+              <Button onClick={() => router.push("/create-post")} className="bg-green-500 mb-4">
+                Créer un post
+              </Button>
               <Button onClick={() => signOut()} className="bg-red-500">
                 Déconnexion
               </Button>
@@ -121,4 +126,3 @@ export default function AuthPage() {
     </main>
   );
 }
-

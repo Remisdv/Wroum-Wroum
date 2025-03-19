@@ -17,6 +17,7 @@ model Commentaire {
 
 model Post {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  titre      String
   contenu    String
   date       DateTime @default(now())
   userId     String
