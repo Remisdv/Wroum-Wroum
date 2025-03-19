@@ -14,12 +14,9 @@ importers:
       '@next/swc-wasm-nodejs':
         specifier: 13.5.1
         version: 13.5.1
-<<<<<<< HEAD
-=======
       '@prisma/client':
         specifier: ^6.5.0
         version: 6.5.0(prisma@6.5.0(typescript@5.2.2))(typescript@5.2.2)
->>>>>>> 92a89425f66180eef4858ca203268490fefc9880
       '@radix-ui/react-accordion':
         specifier: ^1.2.0
         version: 1.2.3(@types/react-dom@18.2.7)(@types/react@18.2.22)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -149,12 +146,6 @@ importers:
       postcss:
         specifier: 8.4.30
         version: 8.4.30
-<<<<<<< HEAD
-=======
-      prisma:
-        specifier: ^6.5.0
-        version: 6.5.0(typescript@5.2.2)
->>>>>>> 92a89425f66180eef4858ca203268490fefc9880
       react:
         specifier: 18.2.0
         version: 18.2.0
@@ -194,6 +185,10 @@ importers:
       zod:
         specifier: ^3.23.8
         version: 3.24.2
+    devDependencies:
+      prisma:
+        specifier: ^6.5.0
+        version: 6.5.0(typescript@5.2.2)
 
 packages:
 
@@ -214,8 +209,6 @@ packages:
   '@emnapi/wasi-threads@1.0.1':
     resolution: {integrity: sha512-iIBu7mwkq4UQGeMEM8bLwNK962nXdhodeScX4slfQnRhEMMzvYivHhutCIk8uojvmASXXPC2WNEjwxFWk72Oqw==}
 
-<<<<<<< HEAD
-=======
   '@esbuild/aix-ppc64@0.25.1':
     resolution: {integrity: sha512-kfYGy8IdzTGy+z0vFGvExZtxkFlA4zAxgKEahG9KE1ScBjpQnFsNOX8KTU5ojNru5ed5CVoJYXFtoxaq5nFbjQ==}
     engines: {node: '>=18'}
@@ -366,7 +359,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
->>>>>>> 92a89425f66180eef4858ca203268490fefc9880
   '@eslint-community/eslint-utils@4.5.1':
     resolution: {integrity: sha512-soEIOALTfTK6EjmKMMoLugwaP0rzkad90iIWd1hMO9ARkSAyjfMfkRRhLvD5qH7vvM0Cg72pieUfR6yh6XxC4w==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
@@ -526,8 +518,6 @@ packages:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
 
-<<<<<<< HEAD
-=======
   '@prisma/client@6.5.0':
     resolution: {integrity: sha512-M6w1Ql/BeiGoZmhMdAZUXHu5sz5HubyVcKukbLs3l0ELcQb8hTUJxtGEChhv4SVJ0QJlwtLnwOLgIRQhpsm9dw==}
     engines: {node: '>=18.18'}
@@ -558,7 +548,6 @@ packages:
   '@prisma/get-platform@6.5.0':
     resolution: {integrity: sha512-xYcvyJwNMg2eDptBYFqFLUCfgi+wZLcj6HDMsj0Qw0irvauG4IKmkbywnqwok0B+k+W+p+jThM2DKTSmoPCkzw==}
 
->>>>>>> 92a89425f66180eef4858ca203268490fefc9880
   '@radix-ui/number@1.1.0':
     resolution: {integrity: sha512-V3gRzhVNU1ldS5XhAPTom1fOIo4ccrjjJgmE+LI2h/WaFpHmx0MQApT+KZHnx8abG6Avtfcz4WoEciMnpFT3HQ==}
 
@@ -1698,8 +1687,6 @@ packages:
     resolution: {integrity: sha512-w+5mJ3GuFL+NjVtJlvydShqE1eN3h3PbI7/5LAsYJP/2qtuMXjfL2LpHSRqo4b4eSF5K/DH1JXKUAHSB2UW50g==}
     engines: {node: '>= 0.4'}
 
-<<<<<<< HEAD
-=======
   esbuild-register@3.6.0:
     resolution: {integrity: sha512-H2/S7Pm8a9CL1uhp9OvjwrBh5Pvx0H8qVOxNu8Wed9Y7qv56MPtq+GGM8RJpq6glYJn9Wspr8uw7l55uyinNeg==}
     peerDependencies:
@@ -1710,7 +1697,6 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
->>>>>>> 92a89425f66180eef4858ca203268490fefc9880
   escalade@3.2.0:
     resolution: {integrity: sha512-WUj2qlxaQtO4g6Pq5c29GTcWGDyd8itL8zTlipgECz3JesAiiOKotd8JU6otB3PACgG6xkJUyVhboMS+bje/jA==}
     engines: {node: '>=6'}
@@ -2462,8 +2448,6 @@ packages:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
 
-<<<<<<< HEAD
-=======
   prisma@6.5.0:
     resolution: {integrity: sha512-yUGXmWqv5F4PByMSNbYFxke/WbnyTLjnJ5bKr8fLkcnY7U5rU9rUTh/+Fja+gOrRxEgtCbCtca94IeITj4j/pg==}
     engines: {node: '>=18.18'}
@@ -2474,7 +2458,6 @@ packages:
       typescript:
         optional: true
 
->>>>>>> 92a89425f66180eef4858ca203268490fefc9880
   prop-types@15.8.1:
     resolution: {integrity: sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg==}
 
@@ -2979,8 +2962,6 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
-<<<<<<< HEAD
-=======
   '@esbuild/aix-ppc64@0.25.1':
     optional: true
 
@@ -3056,7 +3037,6 @@ snapshots:
   '@esbuild/win32-x64@0.25.1':
     optional: true
 
->>>>>>> 92a89425f66180eef4858ca203268490fefc9880
   '@eslint-community/eslint-utils@4.5.1(eslint@8.49.0)':
     dependencies:
       eslint: 8.49.0
@@ -3198,8 +3178,6 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
-<<<<<<< HEAD
-=======
   '@prisma/client@6.5.0(prisma@6.5.0(typescript@5.2.2))(typescript@5.2.2)':
     optionalDependencies:
       prisma: 6.5.0(typescript@5.2.2)
@@ -3233,7 +3211,6 @@ snapshots:
     dependencies:
       '@prisma/debug': 6.5.0
 
->>>>>>> 92a89425f66180eef4858ca203268490fefc9880
   '@radix-ui/number@1.1.0': {}
 
   '@radix-ui/primitive@1.1.1': {}
@@ -4489,8 +4466,6 @@ snapshots:
       is-date-object: 1.1.0
       is-symbol: 1.1.1
 
-<<<<<<< HEAD
-=======
   esbuild-register@3.6.0(esbuild@0.25.1):
     dependencies:
       debug: 4.4.0
@@ -4526,7 +4501,6 @@ snapshots:
       '@esbuild/win32-ia32': 0.25.1
       '@esbuild/win32-x64': 0.25.1
 
->>>>>>> 92a89425f66180eef4858ca203268490fefc9880
   escalade@3.2.0: {}
 
   escape-string-regexp@4.0.0: {}
@@ -5366,8 +5340,6 @@ snapshots:
 
   prelude-ls@1.2.1: {}
 
-<<<<<<< HEAD
-=======
   prisma@6.5.0(typescript@5.2.2):
     dependencies:
       '@prisma/config': 6.5.0
@@ -5378,7 +5350,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
->>>>>>> 92a89425f66180eef4858ca203268490fefc9880
   prop-types@15.8.1:
     dependencies:
       loose-envify: 1.4.0
