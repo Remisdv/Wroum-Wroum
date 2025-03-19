@@ -23,11 +23,15 @@ export default function AuthPage() {
 
     try {
       if (type === 'login') {
-        await signIn('credentials', {
+        const result = await signIn('credentials', {
           redirect: false,
           email,
           password,
         });
+
+        if (result?.error) {
+          console.error("Authentication error:", result.error);
+        }
       } else {
         // Implement registration logic if needed
         console.log("Registration logic not implemented yet.");
