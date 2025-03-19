@@ -20,6 +20,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Email et mot de passe requis !");
         }
 
+        // Vérifier si l'utilisateur existe dans la BDD
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
@@ -28,6 +29,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Utilisateur non trouvé !");
         }
 
+        // Vérifier le mot de passe hashé
         const isValidPassword = await bcrypt.compare(credentials.password, user.mdp);
         if (!isValidPassword) {
           throw new Error("Mot de passe incorrect !");
@@ -56,7 +58,7 @@ export const authOptions: NextAuthOptions = {
     },
   },
   session: {
-    strategy: "jwt" as const, // Ajout de `as const` pour éviter le conflit de type
+    strategy: "jwt" as const,
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
