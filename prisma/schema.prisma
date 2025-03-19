@@ -38,6 +38,7 @@ model Signaler {
 model User {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
   nom           String
+  mdp           String
   email         String   @unique
   posts         Post[]
   commentaires  Commentaire[]
