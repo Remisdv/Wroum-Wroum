@@ -40,11 +40,19 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   try {
-    const posts = await prisma.Post.findMany({ include: {
-      user: true,
-      // comments: true,
-      likes: true,
-    } });
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const pageSize = 3;
+
+    const posts = await prisma.post.findMany({
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: {
+        user: true,
+        commentaires: true,
+        likes: true,
+      },
+    });
 
     const accueilPosts = posts.map(post => ({
       id: post.id,
@@ -56,7 +64,7 @@ export async function GET(req: Request) {
       nbLikes: post.likes.length,
     }));
 
-    return NextResponse.json(accueilPosts);
+    return NextResponse.json(accueilPosts)
 
   } catch (error) {
     console.error("Erreur lors de la recherche des posts :", error);
