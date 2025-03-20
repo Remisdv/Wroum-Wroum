@@ -1,3 +1,5 @@
+"use client";
+import { useState } from 'react';
 import { NavBar } from '@/components/nav-bar';
 import { Heart, MessageCircle, Share2, Clock, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -5,7 +7,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import Link from 'next/link';
 
-export function generateStaticParams() {
+function generateStaticParams() {
   return [
     { id: '1' },
     { id: '2' },
@@ -14,6 +16,8 @@ export function generateStaticParams() {
 }
 
 export default function PostPage({ params }: { params: { id: string } }) {
+  const [showCommentForm, setShowCommentForm] = useState(false);
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <NavBar />
@@ -40,16 +44,21 @@ export default function PostPage({ params }: { params: { id: string } }) {
           </div>
 
           <div className="prose max-w-none mb-6 text-gray-700">
-            <p>La BMW M3 CS est bien plus qu'une simple voiture : c'est une déclaration d'amour à la performance automobile. Depuis sa création, la M3 a toujours été synonyme de dynamisme et de sophistication, et la version CS ne fait pas exception. Avec des améliorations significatives en termes de puissance, de maniabilité et de design, la M3 CS se positionne comme l'une des berlines sportives les plus désirables du marché. Plongeons ensemble dans les détails qui font de cette voiture une véritable légende sur roues ...</p>
-
+            <p>
+              La BMW M3 CS est bien plus qu'une simple voiture : c'est une déclaration d'amour à la performance automobile...
+            </p>
             <h2 className="text-blue-800 text-xl font-semibold mt-6 mb-4">Une Puissance à Couper le Souffle</h2>
-            <p>Sous le capot, la BMW M3 CS se montre encore plus impressionnante avec son moteur de 3.0 litres développant une puissance impressionnante de 550 chevaux. Comparée à la M3 Competition, la CS bénéficie d'une augmentation de puissance de +40 chevaux. Ce surcroît de puissance supplémentaire, combiné à un poids réduit grâce aux éléments allégés en fibre de carbone, permet à la M3 CS d'abattre le 0 à 100 km/h en seulement 3,4 secondes, et la vitesse de pointe atteint les 302 km/h avec le Pack Experience M de série.</p>
-
+            <p>
+              Sous le capot, la BMW M3 CS se montre encore plus impressionnante avec son moteur de 3.0 litres...
+            </p>
             <h2 className="text-blue-800 text-xl font-semibold mt-6 mb-4">Design et Aérodynamisme</h2>
-            <p>La M3 CS est une œuvre d'art roulante. Son design extérieur est à la fois sportif et raffiné, avec des lignes fluides qui soulignent sa silhouette. La voiture est équipée de jantes en alliage M forgées exclusives de 19 pouces à l'avant et 20 pouces à l'arrière, chaussées de pneumatiques hautes performances Michelin Pilot Sport Cup 2. Le choix de nouveaux matériaux reflète parfaitement l'esprit sportif et dynamique de la M3 CS.</p>
-
+            <p>
+              La M3 CS est une œuvre d'art roulante...
+            </p>
             <h2 className="text-blue-800 text-xl font-semibold mt-6 mb-4">Conclusion</h2>
-            <p>La BMW M3 CS est une voiture exceptionnelle qui combine puissance, performances et design de manière magistrale. Que vous soyez un passionné de voitures de sport ou simplement à la recherche d'une expérience de conduite intégrée, la M3 CS est une voiture qui marquera par ses vives performances. Avec sa production limitée et ses caractéristiques exclusives, elle est destinée à devenir un classique intemporel dans le monde de l'automobile.</p>
+            <p>
+              La BMW M3 CS est une voiture exceptionnelle qui combine puissance, performances et design de manière magistrale...
+            </p>
           </div>
 
           <div className="flex gap-4 border-t pt-4 border-blue-100">
@@ -57,10 +66,16 @@ export default function PostPage({ params }: { params: { id: string } }) {
               <Heart className="h-4 w-4 mr-1" />
               J'aime
             </Button>
-            <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              onClick={() => setShowCommentForm((prev) => !prev)}
+            >
               <MessageCircle className="h-4 w-4 mr-1" />
               Commenter
             </Button>
+
             <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
               <Share2 className="h-4 w-4 mr-1" />
               Partager
@@ -68,12 +83,32 @@ export default function PostPage({ params }: { params: { id: string } }) {
           </div>
         </Card>
 
+        {/* Affichage conditionnel du champ pour écrire un nouveau commentaire */}
+        {showCommentForm && (
+          <div className="flex items-start gap-3 p-4 bg-white rounded-lg border border-blue-100 shadow-sm hover:shadow transition-shadow mt-6">
+            <Avatar className="w-8 h-8 border-2 border-blue-200" />
+            <div className="flex-1">
+              <textarea
+                className="w-full p-2 border border-blue-100 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                placeholder="Écrire votre commentaire..."
+              ></textarea>
+              <div className="flex justify-end mt-2">
+                <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                  Envoyer
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mt-6 space-y-4">
           <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-blue-100 shadow-sm hover:shadow transition-shadow">
             <Avatar className="w-8 h-8 border-2 border-blue-200" />
             <div>
               <div className="font-medium text-blue-900">Pablo</div>
-              <p className="text-sm text-gray-600">Oui euh alors la enfaite c'est la description du poste et blablablabla etc ta capté ou quoi le boss...</p>
+              <p className="text-sm text-gray-600">
+                Oui euh alors là en fait c'est la description du poste et blablablabla...
+              </p>
             </div>
             <div className="ml-auto flex items-center gap-1 text-blue-600">
               <Clock className="w-4 h-4" />
@@ -91,6 +126,12 @@ export default function PostPage({ params }: { params: { id: string } }) {
               <Clock className="w-4 h-4" />
               <span className="text-sm">19h45</span>
             </div>
+          </div>
+
+          <div className="text-center mt-8">
+            <Button variant="outline" className="w-full max-w-sm bg-white hover:bg-gray-50">
+              Voir plus d'articles
+            </Button>
           </div>
         </div>
       </div>
