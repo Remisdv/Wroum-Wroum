@@ -43,3 +43,24 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
     }
 }
+
+export async function GET(req: Request) {
+    try {
+        const { searchParams } = new URL(req.url);
+        const postId = searchParams.get("postId");
+
+        if (!postId) {
+            return NextResponse.json({ error: "postId est requis" }, { status: 400 });
+        }
+
+        const comments = await prisma.Commentaire.findMany({
+            where: { postId },
+            include: { user: true },
+        });
+
+        return NextResponse.json(comments);
+    } catch (error) {
+        console.error("Erreur lors de la récupération des commentaires :", error);
+        return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+    }
+}
