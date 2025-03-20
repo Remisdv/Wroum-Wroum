@@ -11,8 +11,10 @@ model Commentaire {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   contenu   String
   date      DateTime @default(now())
+  postId    String
   userId    String
   user      User     @relation(fields: [userId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id])
 }
 
 model Post {
@@ -23,7 +25,8 @@ model Post {
   userId     String
   user       User     @relation(fields: [userId], references: [id])
   signalements Signaler[] // Ajout de la relation inverse
-  likes      Like[]   // Ajout de la relation inverse
+  likes      Like[]
+  commentaires Commentaire[]  // Ajout de la relation inverse
 }
 
 model Signaler {

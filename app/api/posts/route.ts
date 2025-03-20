@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient(); // Assure-toi que ça existe bien
+const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
   try {
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     }
 
     // Création du post
-    const newPost = await prisma.post.create({
+    const newPost = await prisma.Post.create({
       data: {
         titre,
         contenu,
@@ -34,6 +34,40 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error("Erreur lors de la création du post :", error);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+  }
+}
+
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const pageSize = 3;
+
+    const posts = await prisma.post.findMany({
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: {
+        user: true,
+        commentaires: true,
+        likes: true,
+      },
+    });
+
+    const accueilPosts = posts.map(post => ({
+      id: post.id,
+      auteur: post.user.nom,
+      titre: post.titre,
+      contenu: post.contenu.substring(0, 100),
+      date: post.date,
+      // nbCommentaires: post.comments.length,
+      nbLikes: post.likes.length,
+    }));
+
+    return NextResponse.json(accueilPosts)
+
+  } catch (error) {
+    console.error("Erreur lors de la recherche des posts :", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
