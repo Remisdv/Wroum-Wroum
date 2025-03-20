@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from 'react';
-import { Menu, Search, User, Bell } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import Link from 'next/link';
+import { useSession, signOut } from "next-auth/react"; // Import useSession and signOut
+import { Menu, Search, User, Bell } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import Link from "next/link";
 
 export function NavBar() {
+  const { data: session, status } = useSession(); // Get session data and status
+
+  const isAuthenticated = status === "authenticated"; // Check if the user is authenticated
+
   return (
     <header className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50">
       <div className="container max-w-4xl mx-auto px-4">
@@ -17,9 +20,7 @@ export function NavBar() {
           </Button>
 
           <Link href="/" className="flex-1 md:flex-none">
-            <h1 className="text-xl font-bold text-blue-900">
-              WROUM WROUM
-            </h1>
+            <h1 className="text-xl font-bold text-blue-900">WROUM WROUM</h1>
           </Link>
 
           <div className="hidden md:flex flex-1 max-w-md">
@@ -36,11 +37,29 @@ export function NavBar() {
             <Button variant="ghost" size="icon" className="text-gray-600">
               <Bell className="h-5 w-5" />
             </Button>
-            <Link href="/auth">
-              <Button variant="ghost" size="icon" className="text-gray-600">
-                <User className="h-5 w-5" />
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link href="/profile">
+                  <Button variant="ghost" size="icon" className="text-gray-600">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-600"
+                  onClick={() => signOut()}
+                >
+                  Déconnexion
+                </Button>
+              </>
+            ) : (
+              <Link href="/auth">
+                <Button variant="ghost" size="icon" className="text-gray-600">
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
 
