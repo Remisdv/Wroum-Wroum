@@ -37,3 +37,36 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const pageSize = 3;
+ 
+    const posts = await prisma.post.findMany({
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: {
+        user: true,
+        commentaires: true,
+        likes: true,
+      },
+    });
+ 
+    const accueilPosts = posts.map(post => ({
+      id: post.id,
+      auteur: post.user.nom,
+      titre: post.titre,
+      contenu: post.contenu.substring(0, 100),
+      date: post.date,
+      // nbCommentaires: post.commentaires.length,
+      nbLikes: post.likes.length,
+    }));
+ 
+    return NextResponse.json(accueilPosts)
+ 
+  } catch (error) {
+    console.error("Erreur lors de la recherche des posts :", error);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+  }
+}
