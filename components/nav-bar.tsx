@@ -5,11 +5,18 @@ import { Menu, Search, User, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import { useRouter } from "next/navigation"; // Import useRouter
 
 export function NavBar() {
   const { data: session, status } = useSession(); // Get session data and status
+  const router = useRouter(); // Initialize useRouter
 
   const isAuthenticated = status === "authenticated"; // Check if the user is authenticated
+
+  const handleSignOut = async () => {
+    await signOut({ redirect: false }); // Prevent default redirect
+    router.push("/"); // Redirect to the homepage
+  };
 
   return (
     <header className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50">
@@ -48,7 +55,7 @@ export function NavBar() {
                   variant="ghost"
                   size="sm"
                   className="text-gray-600"
-                  onClick={() => signOut()}
+                  onClick={handleSignOut} // Use the custom sign-out handler
                 >
                   Déconnexion
                 </Button>

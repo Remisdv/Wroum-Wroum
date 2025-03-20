@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation"; // Import useRouter
 import { NavBar } from "@/components/nav-bar";
 import { Button } from "@/components/ui/button";
@@ -8,13 +8,19 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock, User, ArrowRight } from "lucide-react";
 
 export default function AuthPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter(); // Initialize useRouter
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({ nom: "", email: "", password: "" });
+
+  // Redirection vers la page de profil si l'utilisateur est connecté
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.push("/profile");
+    }
+  }, [status, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -38,7 +44,7 @@ export default function AuthPage() {
     setIsLoading(false);
   };
 
-  // Inscription (déjà fonctionnelle)
+  // Inscription
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -58,8 +64,7 @@ export default function AuthPage() {
       await signIn("credentials", {
         email: formData.email,
         password: formData.password,
-        redirect: true,
-        callbackUrl: "/",
+        redirect: false,
       });
     }
 
@@ -72,55 +77,43 @@ export default function AuthPage() {
       
       <div className="container max-w-md mx-auto px-4 py-16">
         <Card className="p-6 border-blue-100 shadow-xl bg-white/80 backdrop-blur">
-          {session ? (
-            <div className="text-center">
-              <p className="mb-4">Bienvenue, {session.user?.email} !</p>
-              <Button onClick={() => router.push("/create-post")} className="bg-green-500 mb-4">
-                Créer un post
-              </Button>
-              <Button onClick={() => signOut()} className="bg-red-500">
-                Déconnexion
-              </Button>
-            </div>
-          ) : (
-            <Tabs defaultValue="register" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="register">Inscription</TabsTrigger>
-                <TabsTrigger value="login">Connexion</TabsTrigger>
-              </TabsList>
+          <Tabs defaultValue="register" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="register">Inscription</TabsTrigger>
+              <TabsTrigger value="login">Connexion</TabsTrigger>
+            </TabsList>
 
-              <TabsContent value="register">
-                <form onSubmit={handleRegister} className="space-y-4">
-                  <Label htmlFor="nom">Nom d'utilisateur</Label>
-                  <Input id="nom" type="text" onChange={handleChange} required />
+            <TabsContent value="register">
+              <form onSubmit={handleRegister} className="space-y-4">
+                <Label htmlFor="nom">Nom d'utilisateur</Label>
+                <Input id="nom" type="text" onChange={handleChange} required />
 
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" onChange={handleChange} required />
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" onChange={handleChange} required />
 
-                  <Label htmlFor="password">Mot de passe</Label>
-                  <Input id="password" type="password" onChange={handleChange} required />
+                <Label htmlFor="password">Mot de passe</Label>
+                <Input id="password" type="password" onChange={handleChange} required />
 
-                  <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
-                    {isLoading ? "Inscription en cours..." : "S'inscrire"}
-                  </Button>
-                </form>
-              </TabsContent>
+                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+                  {isLoading ? "Inscription en cours..." : "S'inscrire"}
+                </Button>
+              </form>
+            </TabsContent>
 
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" onChange={handleChange} required />
+            <TabsContent value="login">
+              <form onSubmit={handleLogin} className="space-y-4">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" onChange={handleChange} required />
 
-                  <Label htmlFor="password">Mot de passe</Label>
-                  <Input id="password" type="password" onChange={handleChange} required />
+                <Label htmlFor="password">Mot de passe</Label>
+                <Input id="password" type="password" onChange={handleChange} required />
 
-                  <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
-                    {isLoading ? "Connexion en cours..." : "Se connecter"}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
-          )}
+                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+                  {isLoading ? "Connexion en cours..." : "Se connecter"}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
         </Card>
       </div>
     </main>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { NavBar } from "@/components/nav-bar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,6 +12,8 @@ import { Avatar } from "@/components/ui/avatar";
 import { Heart, MessageCircle, Share2, PenSquare } from "lucide-react";
 
 export default function ProfilePage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [postTitle, setPostTitle] = useState("");
   const [postContent, setPostContent] = useState("");
   const [isPosting, setIsPosting] = useState(false);
@@ -17,13 +21,59 @@ export default function ProfilePage() {
   const handleSubmitPost = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsPosting(true);
-    // TODO: Implement post creation
-    setTimeout(() => {
+
+    if (!session?.user) {
+      alert("Vous devez être connecté pour créer un post.");
       setIsPosting(false);
-      setPostTitle("");
-      setPostContent("");
-    }, 1000);
+      return;
+    }
+
+    const postData = {
+      titre: postTitle,
+      contenu: postContent,
+      userId: session.user.id, // Assurez-vous que `id` est défini dans votre session
+    };
+
+    try {
+      const response = await fetch("/api/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(postData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert("Erreur : " + data.error);
+      } else {
+        alert("Post créé avec succès !");
+        setPostTitle("");
+        setPostContent("");
+        router.push("/profile"); // Recharge la page de profil
+      }
+    } catch (error) {
+      console.error("Erreur lors de la création du post :", error);
+      alert("Une erreur s'est produite.");
+    } finally {
+      setIsPosting(false);
+    }
   };
+
+  if (status === "loading") {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <p className="text-xl font-semibold">Chargement...</p>
+      </main>
+    );
+  }
+
+  if (!session?.user) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <p className="text-xl font-semibold">Vous devez être connecté pour accéder à cette page.</p>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50">
@@ -35,23 +85,8 @@ export default function ProfilePage() {
           <div className="flex items-start gap-6">
             <Avatar className="w-24 h-24 border-4 border-blue-100" />
             <div className="flex-1">
-              <h1 className="text-2xl font-bold text-blue-900 mb-2">Jean-Michel Passion</h1>
-              <p className="text-gray-600 mb-4">Passionné d'automobile depuis toujours. Amateur de belles mécaniques et de sensations fortes.</p>
-              
-              <div className="flex gap-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">127</div>
-                  <div className="text-sm text-gray-600">Posts</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">1.2k</div>
-                  <div className="text-sm text-gray-600">Abonnés</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">3.4k</div>
-                  <div className="text-sm text-gray-600">Likes</div>
-                </div>
-              </div>
+              <h1 className="text-2xl font-bold text-blue-900 mb-2">{session.user.name || "Utilisateur"}</h1>
+              <p className="text-gray-600 mb-4">Bienvenue sur votre profil !</p>
             </div>
           </div>
         </Card>
