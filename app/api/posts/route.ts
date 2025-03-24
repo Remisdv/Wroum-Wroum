@@ -65,13 +65,7 @@ export async function GET(req: Request) {
       auteur: post.user.nom,
       titre: post.titre,
       contenu: post.contenu.substring(0, 100),
-      date: new Date(post.date).toLocaleString('fr-FR', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
+      date: post.date,
       nbLikes: post.likes.length,
     }));
 
@@ -111,13 +105,7 @@ export async function GET_BY_ID(req: Request) {
       auteur: post.user.nom,
       titre: post.titre,
       contenu: post.contenu,
-      date: new Date(post.date).toLocaleString('fr-FR', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
+      date: post.date,
       nbCommentaires: post.commentaires.length,
       nbLikes: post.likes.length,
     };
