@@ -42,9 +42,13 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const postId = searchParams.get('postId');
+    const userId = searchParams.get('userId');
 
     if (postId) {
       return await GET_BY_ID(req);
+    }
+    if (userId) {
+      return await GET_BY_USER(req);
     }
 
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -114,6 +118,41 @@ export async function GET_BY_ID(req: Request) {
 
   } catch (error) {
     console.error("Erreur lors de la récupération du post :", error);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+  }
+}
+
+export async function GET_BY_USER(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get('userId');
+
+    if (!userId) {
+      return NextResponse.json({ error: "userId est requis" }, { status: 400 });
+    }
+
+    const posts = await prisma.post.findMany({
+      where: { userId },
+      include: {
+        user: true,
+        commentaires: true,
+        likes: true,
+      },
+    });
+
+    const userPosts = posts.map(post => ({
+      id: post.id,
+      auteur: post.user.nom,
+      titre: post.titre,
+      contenu: post.contenu.substring(0, 100),
+      date: post.date,
+      nbLikes: post.likes.length,
+    }));
+
+    return NextResponse.json(userPosts);
+
+  } catch (error) {
+    console.error("Erreur lors de la récupération des posts de l'utilisateur :", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
