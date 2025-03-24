@@ -39,7 +39,10 @@ interface Post {
   nbCommentaires: number;
 }
 
+
 export default function PostPage({ params }: { params: { id: string } }) {
+  const [hasLiked, setHasLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -61,17 +64,26 @@ export default function PostPage({ params }: { params: { id: string } }) {
     const fetchPost = async () => {
       try {
         const response = await fetch(`/api/posts?postId=${params.id}`);
-        if (!response.ok) {
-          throw new Error("Post introuvable");
-        }
+        if (!response.ok) throw new Error("Post introuvable");
+    
         const data: Post = await response.json();
         setPost(data);
+        setLikesCount(data.nbLikes);
+    
+        // Vérifier si l'utilisateur a liké
+        if (session?.user?.id) {
+          const likeRes = await fetch(`/api/likes?postId=${params.id}`);
+          const likesData = await likeRes.json();
+          const userHasLiked = likesData.some((like: any) => like.userId === session.user.id);
+          setHasLiked(userHasLiked);
+        }
       } catch (error) {
         console.error("Erreur lors de la récupération du post :", error);
       } finally {
         setIsLoading(false);
       }
     };
+    
 
     const fetchComments = async () => {
       try {
@@ -123,6 +135,29 @@ export default function PostPage({ params }: { params: { id: string } }) {
       alert("Une erreur s'est produite.");
     }
   };
+
+  const toggleLike = async () => {
+    if (!session?.user?.id) return;
+  
+    try {
+      const response = await fetch("/api/likes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postId: params.id,
+          userId: session.user.id,
+        }),
+      });
+  
+      const data = await response.json();
+  
+      setHasLiked((prev) => !prev);
+      setLikesCount((prev) => (hasLiked ? prev - 1 : prev + 1));
+    } catch (error) {
+      console.error("Erreur lors du like :", error);
+    }
+  };
+  
 
   if (status === "loading" || isLoading) {
     return (
@@ -180,10 +215,16 @@ export default function PostPage({ params }: { params: { id: string } }) {
           ></div>
 
           <div className="flex gap-4 border-t pt-4 border-gray-200">
-            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600">
-              <Heart className="h-4 w-4 mr-1" />
-              J'aime ({post.nbLikes})
-            </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleLike}
+            className={`hover:text-blue-600 ${hasLiked ? "text-red-500" : "text-gray-600"}`}
+          >
+            <Heart className="h-4 w-4 mr-1" />
+            J'aime ({likesCount})
+          </Button>
+
             <Button
               variant="ghost"
               size="sm"
