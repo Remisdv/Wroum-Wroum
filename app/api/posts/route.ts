@@ -43,12 +43,13 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const postId = searchParams.get('postId');
     const userId = searchParams.get('userId');
+    const creatorId = searchParams.get('creatorId');
 
     if (postId) {
       return await GET_BY_ID(req);
     }
-    if (userId) {
-      return await GET_BY_USER(req);
+    if (creatorId) {
+      return await GET_BY_CREATOR(req, creatorId, userId);
     }
 
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -122,17 +123,11 @@ export async function GET_BY_ID(req: Request) {
   }
 }
 
-export async function GET_BY_USER(req: Request) {
+// récupérer les posts d'un créateur précis
+export async function GET_BY_CREATOR(req: Request, creatorId: string, userId: string | null) {
   try {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
-
-    if (!userId) {
-      return NextResponse.json({ error: "userId est requis" }, { status: 400 });
-    }
-
     const posts = await prisma.post.findMany({
-      where: { userId },
+      where: { userId: creatorId },
       include: {
         user: true,
         commentaires: true,
@@ -147,12 +142,13 @@ export async function GET_BY_USER(req: Request) {
       contenu: post.contenu.substring(0, 100),
       date: post.date,
       nbLikes: post.likes.length,
+      isOwner: userId === creatorId,
     }));
 
     return NextResponse.json(userPosts);
 
   } catch (error) {
-    console.error("Erreur lors de la récupération des posts de l'utilisateur :", error);
+    console.error("Erreur lors de la récupération des posts du créateur :", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
