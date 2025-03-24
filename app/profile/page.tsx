@@ -2,30 +2,22 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { Session } from "next-auth";
-
-// Extend the Session type to include the `id` property
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string;
-      name?: string | null;
-      email?: string | null;
-      image?: string | null;
-    };
-  }
-}
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+import "react-quill/dist/quill.snow.css"; // Importer les styles de Quill
 import { NavBar } from "@/components/nav-bar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/avatar";
 import { Heart, MessageCircle, Share2 } from "lucide-react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+import DOMPurify from "dompurify"; // Pour nettoyer le HTML
+
+// Charger React Quill uniquement côté client
+const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
 interface Post {
   id: string;
@@ -40,7 +32,7 @@ export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [postTitle, setPostTitle] = useState("");
-  const [postContent, setPostContent] = useState("");
+  const [postContent, setPostContent] = useState(""); // Contenu en HTML
   const [isPosting, setIsPosting] = useState(false);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
@@ -80,9 +72,12 @@ export default function ProfilePage() {
       return;
     }
 
+    // Nettoyer le contenu HTML pour éviter les failles XSS
+    const sanitizedContent = DOMPurify.sanitize(postContent);
+
     const postData = {
       titre: postTitle,
-      contenu: postContent,
+      contenu: sanitizedContent, // Enregistrer le contenu nettoyé
       userId: session.user.id,
     };
 
@@ -152,11 +147,10 @@ export default function ProfilePage() {
               onChange={(e) => setPostTitle(e.target.value)}
               className="text-lg font-semibold"
             />
-            <Textarea
-              placeholder="Contenu de votre post..."
+            <ReactQuill
               value={postContent}
-              onChange={(e) => setPostContent(e.target.value)}
-              className="min-h-[200px] resize-none"
+              onChange={setPostContent} // Mettre à jour le contenu
+              className="min-h-[200px] bg-white"
             />
             <div className="flex justify-end">
               <Button
@@ -184,7 +178,11 @@ export default function ProfilePage() {
                     <Avatar className="w-12 h-12 border-2 border-gray-300" />
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-blue-900">{post.titre}</h3>
-                      <p className="text-gray-600">{post.contenu}</p>
+                      {/* Afficher le contenu HTML */}
+                      <div
+                        className="text-gray-600"
+                        dangerouslySetInnerHTML={{ __html: post.contenu }}
+                      ></div>
                       <div className="flex items-center gap-4 mt-2 text-gray-500">
                         <Heart className="w-4 h-4" />
                         <span>{post.nbLikes}</span>

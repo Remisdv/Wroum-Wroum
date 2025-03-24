@@ -14,7 +14,7 @@ interface Post {
   id: string;
   auteur: string;
   titre: string;
-  contenu: string;
+  contenu: string; // Contenu en HTML
   date: string;
   nbLikes: number;
   nbCommentaires?: number;
@@ -103,9 +103,11 @@ export default function Home() {
                     <h3 className="text-xl font-semibold mb-2 text-gray-900">
                       {post.titre}
                     </h3>
-                    <p className="text-gray-600 line-clamp-2">
-                      {post.contenu}
-                    </p>
+                    {/* Afficher le contenu HTML */}
+                    <div
+                      className="text-gray-600 line-clamp-2"
+                      dangerouslySetInnerHTML={{ __html: post.contenu }}
+                    ></div>
                   </div>
                   <div className="flex items-center gap-1 text-gray-500 ml-4">
                     <Clock className="w-4 h-4" />
