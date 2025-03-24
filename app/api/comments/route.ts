@@ -48,9 +48,13 @@ export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const postId = searchParams.get("postId");
+        const userId = searchParams.get("userId");
 
         if (!postId) {
             return NextResponse.json({ error: "postId est requis" }, { status: 400 });
+        }
+        if (!userId) {
+            return NextResponse.json({ error: "Le user doit être connecté" }, { status: 400 });
         }
 
         const comments = await prisma.commentaire.findMany({

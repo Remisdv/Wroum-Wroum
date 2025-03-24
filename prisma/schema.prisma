@@ -18,15 +18,16 @@ model Commentaire {
 }
 
 model Post {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  titre      String
-  contenu    String
-  date       DateTime @default(now())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
-  signalements Signaler[] // Ajout de la relation inverse
-  likes      Like[]
-  commentaires Commentaire[]  // Ajout de la relation inverse
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  titre         String
+  contenu       String
+  date          DateTime @default(now())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  signalements  Signaler[]
+  likes         Like[]
+  commentaires  Commentaire[]
+  vues          Int      @default(0)
 }
 
 model Signaler {
@@ -47,7 +48,9 @@ model User {
   posts         Post[]
   commentaires  Commentaire[]
   signalements  Signaler[]
-  likes         Like[]   // Ajout de la relation inverse
+  likes         Like[]
+  abonnements   Subscription[] @relation("Following")
+  abonnes       Subscription[] @relation("Follower")
 }
 
 model Like {
@@ -57,4 +60,13 @@ model Like {
   postId    String
   post      Post     @relation(fields: [postId], references: [id])
   date      DateTime @default(now())
+}
+
+model Subscription {
+  id           String @id @default(auto()) @map("_id") @db.ObjectId
+  followerId   String
+  followingId  String
+  follower     User   @relation(name: "Following", fields: [followerId], references: [id])
+  following    User   @relation(name: "Follower", fields: [followingId], references: [id])
+  createdAt    DateTime @default(now())
 }
