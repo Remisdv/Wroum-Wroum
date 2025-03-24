@@ -28,7 +28,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 });
         }
 
-        const newPost = await prisma.Commentaire.create({
+        const newPost = await prisma.commentaire.create({
             data: {
                 contenu,
                 date: new Date(),
@@ -53,7 +53,7 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "postId est requis" }, { status: 400 });
         }
 
-        const comments = await prisma.Commentaire.findMany({
+        const comments = await prisma.commentaire.findMany({
             where: { postId },
             include: { user: true },
         });
