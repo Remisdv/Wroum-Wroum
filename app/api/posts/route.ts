@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     }
 
     // Création du post
-    const newPost = await prisma.Post.create({
+    const newPost = await prisma.post.create({
       data: {
         titre,
         contenu,
