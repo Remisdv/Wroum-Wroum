@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 export async function POST(req: Request) {
   try {
     const { nom, email, password } = await req.json();
-
+    
     // Vérifier que tous les champs sont remplis
     if (!nom || !email || !password) {
       return NextResponse.json({ error: "Tous les champs sont requis" }, { status: 400 });
