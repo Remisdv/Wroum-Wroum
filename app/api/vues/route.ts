@@ -13,7 +13,10 @@ export async function POST(req: Request): Promise<Response> {
     const { postId, userId }: VueRequestBody = await req.json();
 
     if (!postId || !userId) {
-      return NextResponse.json({ error: "postId et userId sont requis" }, { status: 400 });
+      return NextResponse.json(
+        { error: "postId et userId sont requis" },
+        { status: 400 }
+      );
     }
 
     const post = await prisma.post.findUnique({ where: { id: postId } });
@@ -23,17 +26,20 @@ export async function POST(req: Request): Promise<Response> {
 
     const vues = Array.isArray(post.vues) ? post.vues : [];
 
-    const updatedVues = [...vues, { userId, date: new Date() }];
+    const dejaVu = vues.some((vue: any) => vue.userId === userId);
 
-    await prisma.post.update({
-      where: { id: postId },
-      data: { vues: updatedVues },
-    });
+    if (!dejaVu) {
+      const updatedVues = [...vues, { userId, date: new Date() }];
 
-    return NextResponse.json({
-      message: "Vue ajoutée"
-    });
+      await prisma.post.update({
+        where: { id: postId },
+        data: { vues: updatedVues },
+      });
 
+      return NextResponse.json({ message: "Vue ajoutée" }, { status: 201 });
+    } else {
+      return NextResponse.json({ message: "Déjà vu — aucune mise à jour" }, { status: 200 });
+    }
   } catch (error) {
     console.error("Erreur lors de la gestion de la vue :", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
@@ -57,7 +63,7 @@ export async function GET(req: Request) {
 
     const vues = Array.isArray(post.vues) ? post.vues : [];
 
-    return NextResponse.json(vues);
+    return NextResponse.json(vues, { status: 200 });
   } catch (error) {
     console.error("Erreur lors de la récupération des vues :", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });

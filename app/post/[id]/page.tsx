@@ -98,9 +98,43 @@ export default function PostPage({ params }: { params: { id: string } }) {
       }
     };
 
-    if (status === "authenticated") {
-      fetchPost();
-      fetchComments();
+    const registerView = async () => {
+      if (!params.id || !session?.user?.id) {
+        console.warn("Impossible d'enregistrer la vue : postId ou userId manquant");
+        return;
+      }
+    
+      try {
+        const response = await fetch("/api/vues", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            postId: params.id,
+            userId: session.user.id,
+          }),
+        });
+    
+        if (!response.ok) {
+          console.error("Erreur lors de l'enregistrement de la vue :", await response.json());
+        }
+      } catch (error) {
+        console.error("Erreur lors de l'enregistrement de la vue :", error);
+      }
+    };
+    
+
+    if (status === "authenticated" && session?.user?.id) {
+      const fetchData = async () => {
+        try {
+          await fetchPost(); // Récupère les données du post
+          await fetchComments(); // Récupère les commentaires
+          await registerView(); // Enregistre le vue
+        } catch (error) {
+          console.error("Erreur lors du chargement des données :", error);
+        }
+      };
+    
+      fetchData();
     }
   }, [params.id, status]);
 
