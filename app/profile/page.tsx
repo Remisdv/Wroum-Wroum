@@ -42,7 +42,7 @@ export default function ProfilePage() {
     if (!session?.user?.id) return;
 
     try {
-      const response = await fetch(`/api/posts?userId=${session.user.id}`);
+      const response = await fetch(`/api/posts?creatorId=${session.user.id}`);
       if (!response.ok) {
         throw new Error("Erreur lors de la récupération des posts");
       }
