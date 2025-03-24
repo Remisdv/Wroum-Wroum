@@ -11,6 +11,16 @@ import { Card } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 
+declare module "next-auth" {
+  interface User {
+    id: string; // Ensure 'id' is always defined
+  }
+
+  interface Session {
+    user: User; // Extend session to include the updated User type
+  }
+}
+
 interface Comment {
   id: string;
   contenu: string;
