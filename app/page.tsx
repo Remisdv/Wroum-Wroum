@@ -7,6 +7,8 @@ import { Heart, MessageCircle, Share2, Clock, Flame, TrendingUp } from "lucide-r
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
+import { formatDistanceToNow } from "date-fns"; // Import de date-fns
+import { fr } from "date-fns/locale"; // Import de la locale française
 
 interface Post {
   id: string;
@@ -76,6 +78,15 @@ export default function Home() {
           </div>
         </div>
         
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {[1, 2, 3, 4].map((i) => (
+            <Avatar 
+              key={i}
+              className="w-full h-32 rounded-xl border-2 border-gray-200 cursor-pointer hover:border-blue-400 transition-all bg-gradient-to-r from-gray-200 to-gray-100"
+            />
+          ))}
+        </div>
+
         <div className="space-y-6">
           {posts.map((post) => (
             <Link href={`/post/${post.id}`} key={post.id}>
@@ -98,7 +109,9 @@ export default function Home() {
                   </div>
                   <div className="flex items-center gap-1 text-gray-500 ml-4">
                     <Clock className="w-4 h-4" />
-                    <span className="text-sm">{new Date(post.date).toLocaleTimeString()}</span>
+                    <span className="text-sm">
+                      {formatDistanceToNow(new Date(post.date), { addSuffix: true, locale: fr })}
+                    </span>
                   </div>
                 </div>
                 
