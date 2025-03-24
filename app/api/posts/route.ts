@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     }
 
     // Création du post
-    const newPost = await prisma.Post.create({
+    const newPost = await prisma.post.create({
       data: {
         titre,
         contenu,
@@ -41,8 +41,14 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
+    const postId = searchParams.get('postId');
+
+    if (postId) {
+      return await GET_BY_ID(req);
+    }
+
     const page = parseInt(searchParams.get('page') || '1', 10);
-    const pageSize = 3;
+    const pageSize = 6;
 
     const posts = await prisma.post.findMany({
       skip: (page - 1) * pageSize,
@@ -59,8 +65,13 @@ export async function GET(req: Request) {
       auteur: post.user.nom,
       titre: post.titre,
       contenu: post.contenu.substring(0, 100),
-      date: post.date,
-      // nbCommentaires: post.comments.length,
+      date: new Date(post.date).toLocaleString('fr-FR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
       nbLikes: post.likes.length,
     }));
 
@@ -68,6 +79,53 @@ export async function GET(req: Request) {
 
   } catch (error) {
     console.error("Erreur lors de la recherche des posts :", error);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+  }
+}
+
+// recupérer un post précis
+export async function GET_BY_ID(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const postId = searchParams.get('postId');
+
+    if (!postId) {
+      return NextResponse.json({ error: "postId est requis" }, { status: 400 });
+    }
+
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      include: {
+        user: true,
+        commentaires: true,
+        likes: true,
+      },
+    });
+
+    if (!post) {
+      return NextResponse.json({ error: "Post non trouvé" }, { status: 404 });
+    }
+
+    const postDetails = {
+      id: post.id,
+      auteur: post.user.nom,
+      titre: post.titre,
+      contenu: post.contenu,
+      date: new Date(post.date).toLocaleString('fr-FR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+      nbCommentaires: post.commentaires.length,
+      nbLikes: post.likes.length,
+    };
+
+    return NextResponse.json(postDetails);
+
+  } catch (error) {
+    console.error("Erreur lors de la récupération du post :", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
