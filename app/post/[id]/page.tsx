@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react"; // Import du hook useSession
+import { useRouter, useSearchParams } from "next/navigation"; // Import useSearchParams
+import { useSession } from "next-auth/react";
 import { NavBar } from "@/components/nav-bar";
 import { Heart, MessageCircle, Share2, Clock, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
-import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -31,16 +30,18 @@ interface Post {
 }
 
 export default function PostPage({ params }: { params: { id: string } }) {
-  const { data: session, status } = useSession(); // Récupère la session utilisateur
+  const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams(); // Récupère les paramètres de l'URL
+  const from = searchParams.get("from"); // Récupère le paramètre "from"
+
   const [post, setPost] = useState<Post | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showCommentForm, setShowCommentForm] = useState(false);
 
   useEffect(() => {
-    // Redirige vers la page d'authentification si l'utilisateur n'est pas connecté
     if (status === "unauthenticated") {
-      router.push("/auth"); // Redirige vers /auth
+      router.push("/auth");
     }
   }, [status, router]);
 
@@ -88,12 +89,23 @@ export default function PostPage({ params }: { params: { id: string } }) {
       <NavBar />
       <div className="container max-w-3xl mx-auto px-4 py-6">
         <div className="mb-6">
-          <Link href="/">
-            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600 -ml-2">
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Retour
-            </Button>
-          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-gray-600 hover:text-blue-600 -ml-2"
+            onClick={() => {
+              if (from === "profile") {
+                router.push("/profile"); // Retourne à la page de profil
+              } else if (from === "home") {
+                router.push("/"); // Retourne à la page d'accueil
+              } else {
+                router.push("/"); // Par défaut, retourne à la page d'accueil
+              }
+            }}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Retour
+          </Button>
         </div>
 
         <Card className="p-6 border-gray-200 shadow-lg hover:shadow-xl transition-shadow">
