@@ -31,10 +31,15 @@ export async function POST(req: Request) {
         nom,
         email,
         mdp: hashedPassword,
+        abonnements: [], // important !
+        abonnés: [],
       },
     });
 
-    return NextResponse.json({ message: "Inscription réussie", user: newUser }, { status: 201 });
+    // Ne pas retourner le mot de passe hashé
+    const { mdp, ...userSafe } = newUser;
+
+    return NextResponse.json({ message: "Inscription réussie", user: userSafe }, { status: 201 });
 
   } catch (error) {
     console.error("Erreur d'inscription :", error);

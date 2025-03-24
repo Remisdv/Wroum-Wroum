@@ -7,54 +7,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Commentaire {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  contenu   String
-  date      DateTime @default(now())
-  postId    String
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  post      Post     @relation(fields: [postId], references: [id])
-}
-
 model Post {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  titre      String
-  contenu    String
-  date       DateTime @default(now())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
-  signalements Signaler[] // Ajout de la relation inverse
-  likes      Like[]
-  commentaires Commentaire[]  // Ajout de la relation inverse
-}
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  titre        String
+  contenu      String
+  date         DateTime @default(now())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
 
-model Signaler {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  raison    String
-  date      DateTime @default(now())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  postId    String
-  post      Post     @relation(fields: [postId], references: [id])
+  likes        Json     // [{ userId, date }]
+  vues         Json     // [{ userId, date }]
+  commentaires Json     // [{ userId, contenu, date, signalements: [{ userId, raison, date }] }]
+  signalements Json     // [{ userId, raison, date }]
 }
 
 model User {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  nom           String
-  mdp           String
-  email         String   @unique
-  posts         Post[]
-  commentaires  Commentaire[]
-  signalements  Signaler[]
-  likes         Like[]   // Ajout de la relation inverse
-}
+  id             String @id @default(auto()) @map("_id") @db.ObjectId
+  nom            String
+  mdp            String
+  email          String @unique
+  posts          Post[]
 
-model Like {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  postId    String
-  post      Post     @relation(fields: [postId], references: [id])
-  date      DateTime @default(now())
+  abonnements    Json   // [{ userId, date }]
+  abonnés        Json   // [{ userId, date }]
 }
