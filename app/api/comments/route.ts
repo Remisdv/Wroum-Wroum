@@ -67,13 +67,16 @@ export async function GET(req: Request) {
         // On enrichit chaque commentaire avec le nom de l’auteur
         const commentairesAvecNoms = await Promise.all(
             commentaires.map(async (comment: any) => {
-                const user = await prisma.user.findUnique({ where: { id: comment.userId } });
-                return {
-                    ...comment,
-                    auteur: user?.nom || "Utilisateur inconnu",
-                };
+              const user = await prisma.user.findUnique({ where: { id: comment.userId } });
+              return {
+                ...comment,
+                user: {
+                  name: user?.nom || "Utilisateur inconnu"
+                }
+              };
             })
-        );
+          );
+
 
         return NextResponse.json(commentairesAvecNoms);
     } catch (error) {
