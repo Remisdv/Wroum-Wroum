@@ -69,7 +69,9 @@ export async function GET(req: Request) {
       contenu: post.contenu.substring(0, 100),
       date: post.date,
       nbLikes: Array.isArray(post.likes) ? post.likes.length : 0,
+      nbCommentaires: Array.isArray(post.commentaires) ? post.commentaires.length : 0, // 👈 Ajoute ceci
     }));
+    
 
     return NextResponse.json(accueilPosts);
 
