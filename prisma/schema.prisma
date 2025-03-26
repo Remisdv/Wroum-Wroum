@@ -17,7 +17,7 @@ model Post {
 
   likes        Json     // [{ userId, date }]
   vues         Json     // [{ userId, date }]
-  commentaires Json     // [{ userId, contenu, date, signalements: [{ userId, raison, date }] }]
+  commentaires Json     // [{ commentaireId, userId, contenu, date, signalements: [{userId, raison, date }] }]
   signalements Json     // [{ userId, raison, date }]
 }
 
