@@ -24,7 +24,13 @@ export async function GET(req: Request) {
         },
       });
 
-      return NextResponse.json(users);
+      // Ajouter un type aux résultats des utilisateurs
+      const formattedUsers = users.map(user => ({
+        ...user,
+        type: "user"
+      }));
+
+      return NextResponse.json(formattedUsers);
     } else {
       // Recherche de posts par titre
       const posts = await prisma.post.findMany({
@@ -37,7 +43,13 @@ export async function GET(req: Request) {
         include: { user: true },
       });
 
-      return NextResponse.json(posts);
+      // Ajouter un type aux résultats des posts
+      const formattedPosts = posts.map(post => ({
+        ...post,
+        type: "post"
+      }));
+
+      return NextResponse.json(formattedPosts);
     }
 
   } catch (error) {

@@ -35,7 +35,11 @@ export function NavBar() {
 
       try {
         const response = await fetch(`/api/navbarre?query=${searchQuery}`);
+        if (!response.ok) {
+          throw new Error("Erreur lors de la recherche");
+        }
         const data = await response.json();
+        console.log("Données de recherche:", data); // Pour débogage
         setResults(data);
       } catch (error) {
         console.error("Erreur lors de la recherche :", error);
@@ -47,6 +51,22 @@ export function NavBar() {
     const timeoutId = setTimeout(fetchResults, 300); // Déclenche la recherche après 300ms
     return () => clearTimeout(timeoutId); // Annule la recherche précédente si l'utilisateur continue à taper
   }, [searchQuery]);
+
+  // Fonction pour gérer le clic sur un résultat
+  const handleResultClick = (result: any) => {
+    console.log("Résultat cliqué:", result); // Pour débogage
+    
+    if (result.type === "post") {
+      // C'est un post, rediriger vers la page du post
+      router.push(`/post/${result.id}`);
+    } else if (result.type === "user") {
+      // C'est un utilisateur, rediriger vers son profil
+      router.push(`/profile/${result.nom || result.id}`);
+    }
+    
+    setSearchQuery(""); // Effacer la recherche après la redirection
+    setResults([]); // Effacer les résultats
+  };
 
   return (
     <header className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50">
@@ -64,7 +84,7 @@ export function NavBar() {
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Rechercher..."
+                placeholder="Rechercher... (@utilisateur pour profils)"
                 className="pl-10 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -77,25 +97,19 @@ export function NavBar() {
                 {isSearching ? (
                   <p className="p-4 text-gray-500">Recherche en cours...</p>
                 ) : (
-                  <ul className="divide-y divide-gray-200">
-                    {results.map((result) => (
+                  <ul className="divide-y divide-gray-200 max-h-80 overflow-y-auto">
+                    {results.map((result, index) => (
                       <li
-                        key={result.id}
+                        key={result.id || index}
                         className="p-4 hover:bg-gray-100 cursor-pointer"
-                        onClick={() => {
-                          if (result.titre) {
-                            // Redirige vers un post
-                            router.push(`/post/${result.id}`);
-                          } else {
-                            // Pour l'instant, ne fait rien pour les profils
-                            console.log("Profil sélectionné :", result.nom);
-                          }
-                        }}
+                        onClick={() => handleResultClick(result)}
                       >
-                        {result.titre ? (
+                        {result.type === "post" ? (
                           <div>
                             <p className="font-medium text-gray-800">{result.titre}</p>
-                            <p className="text-sm text-gray-500">Post</p>
+                            <p className="text-sm text-gray-500">
+                              Post par {result.user?.nom || "Utilisateur inconnu"}
+                            </p>
                           </div>
                         ) : (
                           <div>
@@ -117,11 +131,13 @@ export function NavBar() {
             </Button>
             {isAuthenticated ? (
               <>
-                <Link href="/profile">
-                  <Button variant="ghost" size="icon" className="text-gray-600">
-                    <User className="h-5 w-5" />
-                  </Button>
-                </Link>
+                {session?.user && (
+                  <Link href={`/profile/${session.user.name || session.user.id}`}>
+                    <Button variant="ghost" size="icon" className="text-gray-600">
+                      <User className="h-5 w-5" />
+                    </Button>
+                  </Link>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -138,18 +154,6 @@ export function NavBar() {
                 </Button>
               </Link>
             )}
-          </div>
-        </div>
-
-        <div className="pb-4 md:hidden">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Rechercher..."
-              className="pl-10 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
           </div>
         </div>
       </div>
