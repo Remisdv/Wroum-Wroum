@@ -12,35 +12,37 @@ model Post {
   titre        String
   contenu      String
   date         DateTime @default(now())
-  userId       String
+  userId       String   @db.ObjectId
   user         User     @relation(fields: [userId], references: [id])
 
-  likes        Json     // [{ userId, date }]
-  vues         Json     // [{ userId, date }]
-  commentaires Json     // [{ commentaireId, userId, contenu, date, signalements: [{userId, raison, date }] }]
-  signalements Json     // [{ userId, raison, date }]
+  likes        Json
+  vues         Json
+  commentaires Json
+  signalements Json
+
+  signalementsRelation Signalement[] @relation("PostSignalements")
 }
 
 model User {
-  id             String @id @default(auto()) @map("_id") @db.ObjectId
-  nom            String
-  mdp            String
-  email          String @unique
-  posts          Post[]
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  nom         String
+  mdp         String
+  email       String @unique
+  posts       Post[]
 
-  abonnements    Json   // [{ userId, date }]
-  abonnés        Json   // [{ userId, date }]
+  abonnements Json
+  abonnés     Json
 }
 
 model Signalement {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  type          String   // "post" ou "commentaire"
+  type          String
   postId        String?  @db.ObjectId
-  commentaireId String?  @db.ObjectId
-  userId        String   @db.ObjectId // Celui qui a signalé
+  commentaireId String?
+  userId        String   @db.ObjectId
   raison        String
   date          DateTime @default(now())
 
-  post          Post?    @relation(fields: [postId], references: [id])
-  commentaire   Json?    // Stocker le contenu du commentaire au moment du signalement
+  post          Post?    @relation("PostSignalements", fields: [postId], references: [id])
+  commentaire   Json?
 }
