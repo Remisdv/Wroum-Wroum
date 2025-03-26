@@ -1,33 +1,51 @@
 generator client {
   provider = "prisma-client-js"
 }
-
+ 
 datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
 }
-
+ 
 model Post {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   titre        String
   contenu      String
   date         DateTime @default(now())
-  userId       String
+  userId       String   @db.ObjectId
   user         User     @relation(fields: [userId], references: [id])
-
-  likes        Json     // [{ userId, date }]
-  vues         Json     // [{ userId, date }]
-  commentaires Json     // [{ commentaireId, userId, contenu, date, signalements: [{userId, raison, date }] }]
-  signalements Json     // [{ userId, raison, date }]
+ 
+  likes        Json
+  vues         Json
+  commentaires Json
+  signalements Json
+ 
+  signalementsRelation Signalement[] @relation("PostSignalements")
 }
-
+ 
 model User {
-  id             String @id @default(auto()) @map("_id") @db.ObjectId
-  nom            String
-  mdp            String
-  email          String @unique
-  posts          Post[]
-
-  abonnements    Json   // [{ userId, date }]
-  abonnés        Json   // [{ userId, date }]
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  nom         String
+  mdp         String
+  email       String @unique
+  role        String @default("user")
+  posts       Post[]
+ 
+  abonnements Json
+  abonnés     Json
+  photoProfil String? // URL de la photo de profil
+  banniere    String? // URL de la bannière
+}
+ 
+model Signalement {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  type          String
+  postId        String?  @db.ObjectId
+  commentaireId String?
+  userId        String   @db.ObjectId
+  raison        String
+  date          DateTime @default(now())
+ 
+  post          Post?    @relation("PostSignalements", fields: [postId], references: [id])
+  commentaire   Json?
 }
