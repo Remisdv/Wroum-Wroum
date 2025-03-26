@@ -38,7 +38,10 @@ export async function POST(req: Request) {
 
         // Mettre à jour le post avec le nouveau signalement
         const signalements = Array.isArray(post.signalements) ? post.signalements : [];
-        signalements.push(nouveauSignalement);
+        signalements.push({
+            ...nouveauSignalement,
+            date: nouveauSignalement.date.toISOString(),
+        });
 
         await prisma.post.update({
             where: { id: postId },
