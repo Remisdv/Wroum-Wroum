@@ -214,21 +214,29 @@ export default function PostPage({ params }: { params: { id: string } }) {
       <NavBar />
       <div className="container max-w-3xl mx-auto px-4 py-6">
         <div className="mb-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-gray-600 hover:text-blue-600 -ml-2"
-            onClick={() => {
-              if (from === "profile") {
-                router.push("/profile");
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-gray-600 hover:text-blue-600 -ml-2"
+          onClick={() => {
+            if (from === "profile") {
+              router.push("/profile");
+            } else if (from === "publicProfile") {
+              // Récupérer le nom d'utilisateur depuis les paramètres d'URL
+              const username = searchParams.get("username");
+              if (username) {
+                router.push(`/profile/${username}`);
               } else {
                 router.push("/");
               }
-            }}
-          >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Retour
-          </Button>
+            } else {
+              router.push("/");
+            }
+          }}
+        >
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Retour
+        </Button>
         </div>
 
         <Card className="p-6 border-gray-200 shadow-lg hover:shadow-xl transition-shadow">

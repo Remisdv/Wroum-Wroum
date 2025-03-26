@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Avatar } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Share2 } from "lucide-react";
+import { Heart, MessageCircle, Share2, Edit, BarChart2, User, Users } from "lucide-react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -28,6 +28,13 @@ interface Post {
   nbCommentaires: number;
 }
 
+interface ProfileStats {
+  posts: number;
+  abonnements: number;
+  abonnes: number;
+  totalLikes: number;
+}
+
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -36,6 +43,12 @@ export default function ProfilePage() {
   const [isPosting, setIsPosting] = useState(false);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [profileStats, setProfileStats] = useState<ProfileStats>({
+    posts: 0,
+    abonnements: 0,
+    abonnes: 0,
+    totalLikes: 0
+  });
 
   // Fonction pour récupérer les posts de l'utilisateur connecté
   const fetchUserPosts = async () => {
@@ -48,6 +61,16 @@ export default function ProfilePage() {
       }
       const data = await response.json();
       setUserPosts(data);
+      
+      // Calculer le nombre total de likes
+      const totalLikes = data.reduce((sum: number, post: Post) => sum + post.nbLikes, 0);
+      
+      // Mettre à jour les statistiques
+      setProfileStats(prev => ({
+        ...prev,
+        posts: data.length,
+        totalLikes
+      }));
     } catch (error) {
       console.error("Erreur lors de la récupération des posts :", error);
     } finally {
@@ -55,9 +78,32 @@ export default function ProfilePage() {
     }
   };
 
+  // Fonction pour récupérer les statistiques du profil
+  const fetchProfileStats = async () => {
+    if (!session?.user?.id) return;
+
+    try {
+      const response = await fetch(`/api/profil?userId=${session.user.id}`);
+      if (!response.ok) {
+        throw new Error("Erreur lors de la récupération des statistiques du profil");
+      }
+      const data = await response.json();
+      
+      // Mettre à jour les statistiques d'abonnements/abonnés
+      setProfileStats(prev => ({
+        ...prev,
+        abonnements: data.abonnements || 0,
+        abonnes: data.abonnes || 0
+      }));
+    } catch (error) {
+      console.error("Erreur lors de la récupération des statistiques :", error);
+    }
+  };
+
   useEffect(() => {
     if (session?.user?.id) {
       fetchUserPosts();
+      fetchProfileStats();
     }
   }, [session?.user?.id]);
 
@@ -106,6 +152,16 @@ export default function ProfilePage() {
     }
   };
 
+  const handleEditProfile = () => {
+    // Navigation vers la page d'édition du profil
+    router.push("/profile/edit");
+  };
+
+  const handleViewStats = () => {
+    // Navigation vers la page de statistiques
+    router.push("/profile/stats");
+  };
+
   if (status === "loading") {
     return (
       <main className="min-h-screen flex items-center justify-center">
@@ -132,8 +188,50 @@ export default function ProfilePage() {
           <div className="flex items-start gap-6">
             <Avatar className="w-24 h-24 border-4 border-blue-100" />
             <div className="flex-1">
-              <h1 className="text-2xl font-bold text-blue-900 mb-2">{session.user.name || "Utilisateur"}</h1>
-              <p className="text-gray-600 mb-4">Bienvenue sur votre profil !</p>
+              <div className="flex justify-between mb-4">
+                <div>
+                  <h1 className="text-2xl font-bold text-blue-900 mb-2">{session.user.name || "Utilisateur"}</h1>
+                  <p className="text-gray-600 mb-4">Bienvenue sur votre profil !</p>
+                </div>
+                <div className="space-x-2">
+                  <Button 
+                    variant="outline" 
+                    className="border-blue-200 text-blue-700"
+                    onClick={handleEditProfile}
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Modifier le profil
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-blue-200 text-blue-700"
+                    onClick={handleViewStats}
+                  >
+                    <BarChart2 className="w-4 h-4 mr-2" />
+                    Statistiques
+                  </Button>
+                </div>
+              </div>
+
+              {/* Statistiques du profil */}
+              <div className="flex gap-6 mb-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{profileStats.posts}</div>
+                  <div className="text-sm text-gray-600">Posts</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{profileStats.abonnes}</div>
+                  <div className="text-sm text-gray-600">Abonnés</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{profileStats.abonnements}</div>
+                  <div className="text-sm text-gray-600">Abonnements</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{profileStats.totalLikes}</div>
+                  <div className="text-sm text-gray-600">Likes</div>
+                </div>
+              </div>
             </div>
           </div>
         </Card>
@@ -180,7 +278,7 @@ export default function ProfilePage() {
                       <h3 className="text-lg font-semibold text-blue-900">{post.titre}</h3>
                       {/* Afficher le contenu HTML */}
                       <div
-                        className="text-gray-600"
+                        className="text-gray-600 prose max-w-none line-clamp-3"
                         dangerouslySetInnerHTML={{ __html: post.contenu }}
                       ></div>
                       <div className="flex items-center gap-4 mt-2 text-gray-500">
