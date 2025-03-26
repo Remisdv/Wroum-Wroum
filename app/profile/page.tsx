@@ -88,12 +88,14 @@ export default function ProfilePage() {
         throw new Error("Erreur lors de la récupération des statistiques du profil");
       }
       const data = await response.json();
+      console.log("Données du profil récupérées:", data);
       
       // Mettre à jour les statistiques d'abonnements/abonnés
+      // Utiliser data.abonnes (sans accent) pour correspondre à la propriété renvoyée par l'API
       setProfileStats(prev => ({
         ...prev,
         abonnements: data.abonnements || 0,
-        abonnes: data.abonnes || 0
+        abonnes: data.abonnes || 0  // C'est ici la modification
       }));
     } catch (error) {
       console.error("Erreur lors de la récupération des statistiques :", error);

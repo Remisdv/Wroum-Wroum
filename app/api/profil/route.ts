@@ -21,13 +21,38 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 });
         }
 
-        const abonnements = typeof user.abonnements === "string" && user.abonnements.trim() !== ""
-            ? JSON.parse(user.abonnements)
-            : [];
+        // Traiter les abonnements selon leur type (chaîne ou tableau)
+        let abonnements = [];
+        if (Array.isArray(user.abonnements)) {
+            // Si c'est déjà un tableau, l'utiliser directement
+            abonnements = user.abonnements;
+        } else if (typeof user.abonnements === "string" && user.abonnements.trim() !== "") {
+            // Si c'est une chaîne JSON, la parser
+            try {
+                abonnements = JSON.parse(user.abonnements);
+            } catch (e) {
+                console.error("Erreur lors du parsing des abonnements:", e);
+            }
+        }
 
-        const abonnes = typeof user.abonnés === "string" && user.abonnés.trim() !== ""
-            ? JSON.parse(user.abonnés)
-            : [];
+        // Traiter les abonnés selon leur type (chaîne ou tableau)
+        let abonnes = [];
+        if (Array.isArray(user.abonnés)) {
+            // Si c'est déjà un tableau, l'utiliser directement
+            abonnes = user.abonnés;
+        } else if (typeof user.abonnés === "string" && user.abonnés.trim() !== "") {
+            // Si c'est une chaîne JSON, la parser
+            try {
+                abonnes = JSON.parse(user.abonnés);
+            } catch (e) {
+                console.error("Erreur lors du parsing des abonnés:", e);
+            }
+        }
+
+        console.log("Type d'abonnements:", typeof user.abonnements, "Valeur:", user.abonnements);
+        console.log("Type d'abonnés:", typeof user.abonnés, "Valeur:", user.abonnés);
+        console.log("Abonnements traités (longueur):", abonnements.length);
+        console.log("Abonnés traités (longueur):", abonnes.length);
 
         const affichageprofil = {
             id: user.id,
@@ -43,7 +68,7 @@ export async function GET(req: Request) {
         return NextResponse.json(affichageprofil);
 
     } catch (error) {
-        console.error("Erreur d'inscription :", error);
+        console.error("Erreur lors de la récupération du profil:", error);
         return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
     }
 }

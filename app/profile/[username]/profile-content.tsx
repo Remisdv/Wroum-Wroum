@@ -20,13 +20,14 @@ interface Post {
   auteur: string;
 }
 
+// Interface adaptée à la structure de données renvoyée par l'API
 interface UserProfile {
   id: string;
   nom: string;
   email: string;
-  posts: number;
-  abonnements: number;
-  abonnes: number;
+  posts: number; // nombre de posts (pas un tableau)
+  abonnements: number; // nombre d'abonnements (pas un tableau)
+  abonnes: number; // nombre d'abonnés (pas un tableau)
   photoProfile: string | null;
   banniere: string | null;
 }
@@ -35,6 +36,7 @@ export default function ProfileContent({ username }: { username: string }) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowingLoading, setIsFollowingLoading] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,23 +53,27 @@ export default function ProfileContent({ username }: { username: string }) {
     }
   }, [username, session, status, router]);
 
-  // Première étape : trouver l'ID de l'utilisateur à partir du nom d'utilisateur
+  // Trouver l'ID de l'utilisateur à partir du nom d'utilisateur
   useEffect(() => {
     const fetchUserId = async () => {
       try {
+        console.log("Recherche de l'utilisateur:", username);
         // Rechercher l'utilisateur par son nom d'utilisateur
         const response = await fetch(`/api/navbarre?query=@${username}`);
         if (!response.ok) {
-          throw new Error("Erreur lors de la recherche de l'utilisateur");
+          throw new Error(`Erreur HTTP: ${response.status}`);
         }
         
         const data = await response.json();
+        console.log("Résultats de recherche navbarre:", data);
+        
         // Chercher l'utilisateur dans les résultats
         const userResult = data.find((result: any) => 
           result.type === "user" && result.nom === username
         );
         
         if (userResult) {
+          console.log("Utilisateur trouvé avec ID:", userResult.id);
           setUserId(userResult.id);
         } else {
           console.error("Utilisateur non trouvé dans les résultats de recherche");
@@ -77,32 +83,51 @@ export default function ProfileContent({ username }: { username: string }) {
       }
     };
 
-    fetchUserId();
+    if (username) {
+      fetchUserId();
+    }
   }, [username]);
 
-  // Deuxième étape : récupérer le profil et les posts lorsque nous avons l'ID
+  // Récupérer le profil et les posts lorsque nous avons l'ID
   useEffect(() => {
     const fetchProfileAndPosts = async () => {
-      if (!userId) return;
+      if (!userId) {
+        console.log("Pas d'ID utilisateur, impossible de charger le profil");
+        return;
+      }
       
       try {
         setIsLoading(true);
+        console.log("Chargement du profil pour userId:", userId);
         
         // Récupérer le profil avec l'ID utilisateur
         const profileResponse = await fetch(`/api/profil?userId=${userId}`);
+        console.log("Statut de la réponse profil:", profileResponse.status);
+        
         if (!profileResponse.ok) {
           throw new Error("Erreur lors de la récupération du profil");
         }
+        
         const profileData = await profileResponse.json();
+        console.log("Données du profil reçues:", profileData);
         setUserProfile(profileData);
         
         // Récupérer les posts avec le même ID
         const postsResponse = await fetch(`/api/posts?creatorId=${userId}`);
+        console.log("Statut de la réponse posts:", postsResponse.status);
+        
         if (!postsResponse.ok) {
           throw new Error("Erreur lors de la récupération des posts");
         }
+        
         const postsData = await postsResponse.json();
+        console.log("Données des posts reçues:", postsData);
         setPosts(postsData);
+
+        // Vérifier l'état d'abonnement si l'utilisateur est connecté
+        if (status === "authenticated" && session?.user?.id) {
+          checkFollowingStatus(session.user.id, userId);
+        }
       } catch (error) {
         console.error("Erreur lors de la récupération des données :", error);
       } finally {
@@ -113,7 +138,76 @@ export default function ProfileContent({ username }: { username: string }) {
     if (userId) {
       fetchProfileAndPosts();
     }
-  }, [userId]);
+  }, [userId, session, status]);
+
+  // Fonction pour vérifier l'état d'abonnement
+  const checkFollowingStatus = async (currentUserId: string, profileUserId: string) => {
+    try {
+      const response = await fetch(`/api/check-abonnement?followerId=${currentUserId}&followingId=${profileUserId}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setIsFollowing(data.isFollowing);
+      }
+    } catch (error) {
+      console.error("Erreur lors de la vérification de l'abonnement:", error);
+    }
+  };
+
+  // Fonction pour gérer l'abonnement/désabonnement
+  const handleFollowToggle = async () => {
+    if (!session?.user?.id || !userId) {
+      alert("Vous devez être connecté pour suivre un utilisateur");
+      return;
+    }
+
+    setIsFollowingLoading(true);
+
+    try {
+      console.log("Envoi de la requête d'abonnement:", {
+        followerId: session.user.id,
+        followingId: userId
+      });
+      
+      const response = await fetch("/api/abonnement", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          followerId: session.user.id,
+          followingId: userId,
+        }),
+      });
+
+      console.log("Statut de la réponse abonnement:", response.status);
+      const result = await response.json();
+      console.log("Résultat de l'opération d'abonnement:", result);
+
+      if (!response.ok) {
+        throw new Error(result.error || "Erreur lors de la gestion de l'abonnement");
+      }
+
+      // Mettre à jour l'état d'abonnement
+      setIsFollowing(!isFollowing);
+      
+      // Mettre à jour le compteur d'abonnés dans l'interface
+      if (userProfile) {
+        setUserProfile({
+          ...userProfile,
+          abonnes: isFollowing ? Math.max(0, userProfile.abonnes - 1) : userProfile.abonnes + 1
+        });
+      }
+      
+      // Notification simple
+      alert(isFollowing ? "Vous vous êtes désabonné" : "Vous êtes maintenant abonné");
+    } catch (error) {
+      console.error("Erreur lors de la gestion de l'abonnement:", error);
+      alert("Une erreur est survenue lors de la gestion de l'abonnement");
+    } finally {
+      setIsFollowingLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -177,16 +271,19 @@ export default function ProfileContent({ username }: { username: string }) {
                   </p>
                 </div>
                 <Button
-                  onClick={() => setIsFollowing(!isFollowing)}
+                  onClick={handleFollowToggle}
+                  disabled={isFollowingLoading}
                   variant={isFollowing ? "outline" : "default"}
                   className={`${
                     isFollowing ? "border-blue-200 text-blue-700" : "bg-blue-600 hover:bg-blue-700"
                   }`}
                 >
-                  {isFollowing ? (
+                  {isFollowingLoading ? (
+                    "Chargement..."
+                  ) : isFollowing ? (
                     <>
                       <Check className="w-4 h-4 mr-2" />
-                      Abonné
+                      Se désabonner
                     </>
                   ) : (
                     <>
