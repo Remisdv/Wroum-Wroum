@@ -42,13 +42,16 @@ export async function POST(req: Request) {
         }
 
         // Créer un nouveau signalement
-        const nouveauSignalement = {
-            postId,
-            userId,
-            titre,
-            contenu,
-            date: new Date().toISOString(),
-        };
+        const nouveauSignalement = await prisma.signalement.create({
+            data: {
+                type: "commentaire", // Assurez-vous que le type est "commentaire"
+                postId,
+                userId,
+                titre,
+                contenu,
+                date: new Date(),
+            },
+        });
 
         // Mettre à jour le commentaire avec le nouveau signalement
         commentaire.signalements = [...(commentaire.signalements || []), nouveauSignalement];
