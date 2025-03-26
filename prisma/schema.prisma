@@ -25,6 +25,7 @@ model Post {
 
 model User {
   id          String @id @default(auto()) @map("_id") @db.ObjectId
+  bio         String @default("Bienvenus sur mon profil !")
   nom         String
   mdp         String
   email       String @unique
