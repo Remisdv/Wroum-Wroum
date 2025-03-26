@@ -28,10 +28,13 @@ model User {
   nom         String
   mdp         String
   email       String @unique
+  role        String @default("user")
   posts       Post[]
 
   abonnements Json
   abonnés     Json
+  photoProfil String? // URL de la photo de profil
+  banniere    String? // URL de la bannière
 }
 
 model Signalement {
