@@ -31,3 +31,16 @@ model User {
   abonnements    Json   // [{ userId, date }]
   abonnés        Json   // [{ userId, date }]
 }
+
+model Signalement {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  type          String   // "post" ou "commentaire"
+  postId        String?  @db.ObjectId
+  commentaireId String?  @db.ObjectId
+  userId        String   @db.ObjectId // Celui qui a signalé
+  raison        String
+  date          DateTime @default(now())
+
+  post          Post?    @relation(fields: [postId], references: [id])
+  commentaire   Json?    // Stocker le contenu du commentaire au moment du signalement
+}
