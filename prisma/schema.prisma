@@ -1,12 +1,10 @@
 generator client {
   provider = "prisma-client-js"
 }
-
 datasource db {
   provider = "mongodb"
   url      = env("DATABASE_URL")
 }
-
 model Post {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   titre        String
@@ -14,30 +12,24 @@ model Post {
   date         DateTime @default(now())
   userId       String   @db.ObjectId
   user         User     @relation(fields: [userId], references: [id])
-
   likes        Json
   vues         Json
   commentaires Json
   signalements Json
-
   signalementsRelation Signalement[] @relation("PostSignalements")
 }
-
 model User {
   id          String @id @default(auto()) @map("_id") @db.ObjectId
-  bio         String @default("Bienvenus sur mon profil !")
   nom         String
   mdp         String
   email       String @unique
   role        String @default("user")
   posts       Post[]
-
   abonnements Json
   abonnés     Json
   photoProfil String? // URL de la photo de profil
   banniere    String? // URL de la bannière
 }
-
 model Signalement {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
   type          String
@@ -46,7 +38,6 @@ model Signalement {
   userId        String   @db.ObjectId
   raison        String
   date          DateTime @default(now())
-
   post          Post?    @relation("PostSignalements", fields: [postId], references: [id])
   commentaire   Json?
 }

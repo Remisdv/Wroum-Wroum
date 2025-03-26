@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Vous ne pouvez pas vous abonner à vous-même" }, { status: 400 });
     }
 
-    //  Récupérer les deux utilisateurs
+    // Récupérer les deux utilisateurs
     const [follower, following] = await Promise.all([
       prisma.user.findUnique({ where: { id: followerId } }),
       prisma.user.findUnique({ where: { id: followingId } }),
@@ -25,15 +25,39 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 });
     }
 
-    const abonnements = Array.isArray(follower.abonnements) ? follower.abonnements : [];
-    const abonnes = Array.isArray(following.abonnés) ? following.abonnés : [];
+    // Convertir les champs Json en tableaux si nécessaire
+    let followerAbonnements = [];
+    let followingAbonnes = [];
+    
+    try {
+      if (typeof follower.abonnements === 'string') {
+        followerAbonnements = JSON.parse(follower.abonnements as string);
+      } else if (Array.isArray(follower.abonnements)) {
+        followerAbonnements = follower.abonnements;
+      } else if (follower.abonnements === null) {
+        followerAbonnements = [];
+      }
+      
+      if (typeof following.abonnés === 'string') {
+        followingAbonnes = JSON.parse(following.abonnés as string);
+      } else if (Array.isArray(following.abonnés)) {
+        followingAbonnes = following.abonnés;
+      } else if (following.abonnés === null) {
+        followingAbonnes = [];
+      }
+    } catch (e) {
+      console.error("Erreur lors du parsing JSON:", e);
+      followerAbonnements = [];
+      followingAbonnes = [];
+    }
 
-    const estDejaAbonne = abonnements.some((a: any) => a.userId === followingId);
+    // Vérifier si déjà abonné
+    const estDejaAbonne = followerAbonnements.some((a: any) => a.userId === followingId);
 
     if (estDejaAbonne) {
       // Désabonnement
-      const newAbonnements = abonnements.filter((a: any) => a.userId !== followingId);
-      const newAbonnes = abonnes.filter((a: any) => a.userId !== followerId);
+      const newAbonnements = followerAbonnements.filter((a: any) => a.userId !== followingId);
+      const newAbonnes = followingAbonnes.filter((a: any) => a.userId !== followerId);
 
       await prisma.user.update({
         where: { id: followerId },
@@ -45,24 +69,24 @@ export async function POST(req: Request) {
         data: { abonnés: newAbonnes },
       });
 
-      return NextResponse.json({ message: "Désabonnement réussi" }, { status: 200 });
+      return NextResponse.json({ message: "Désabonnement réussi", status: "unfollow" }, { status: 200 });
     } else {
       // Abonnement
-      const date = new Date();
+      const date = new Date().toISOString(); // Utiliser une chaîne pour éviter les problèmes de sérialisation
       const newAbonnement = { userId: followingId, date };
       const newAbonne = { userId: followerId, date };
 
       await prisma.user.update({
         where: { id: followerId },
-        data: { abonnements: [...abonnements, newAbonnement] },
+        data: { abonnements: [...followerAbonnements, newAbonnement] },
       });
 
       await prisma.user.update({
         where: { id: followingId },
-        data: { abonnés: [...abonnes, newAbonne] },
+        data: { abonnés: [...followingAbonnes, newAbonne] },
       });
 
-      return NextResponse.json({ message: "Abonnement créé avec succès" }, { status: 201 });
+      return NextResponse.json({ message: "Abonnement créé avec succès", status: "follow" }, { status: 201 });
     }
 
   } catch (error) {
