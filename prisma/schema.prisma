@@ -49,4 +49,5 @@ model Signalement {
  
   post          Post?    @relation("PostSignalements", fields: [postId], references: [id])
   commentaire   Json?
+=======
 }

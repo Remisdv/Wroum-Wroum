@@ -27,6 +27,7 @@ export async function POST(req: Request) {
         const commentaires = Array.isArray(post.commentaires) ? post.commentaires : [];
 
         const nouveauCommentaire = {
+            commentaireId: commentaires.length + 1,
             userId,
             contenu,
             date: new Date(),
