@@ -25,7 +25,10 @@ model Post {
  
 model User {
   id          String @id @default(auto()) @map("_id") @db.ObjectId
+<<<<<<< HEAD
   bio         String @default("Bienvenus sur mon profil !")
+=======
+>>>>>>> Queçareport
   nom         String
   mdp         String
   email       String @unique
@@ -39,6 +42,7 @@ model User {
 }
  
 model Signalement {
+<<<<<<< HEAD
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
   type          String
   postId        String?  @db.ObjectId
@@ -50,4 +54,14 @@ model Signalement {
   post          Post?    @relation("PostSignalements", fields: [postId], references: [id])
   commentaire   Json?
 =======
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  type      String
+  postId    String?  @db.ObjectId
+  userId    String   @db.ObjectId
+  titre     String   // Ajoutez ce champ
+  contenu   String   // Ajoutez ce champ
+  date      DateTime @default(now())
+
+  post      Post?    @relation("PostSignalements", fields: [postId], references: [id])
+>>>>>>> Queçareport
 }
