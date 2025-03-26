@@ -55,23 +55,15 @@ export async function GET(req: Request) {
           const abonnementsIds = abonnements.map((abonnement: any) => abonnement.userId);
 
           const abonnementsPosts = await prisma.post.findMany({
+              skip: (page - 1) * pageSize,
+              take: pageSize,
               where: { userId: { in: abonnementsIds } },
               include: { user: true },
               orderBy: { date: "desc" },
           });
 
-          const autresPosts = await prisma.post.findMany({
-              where: { userId: { notIn: abonnementsIds } },
-              skip: (page - 1) * pageSize,
-              take: pageSize,
-              include: { user: true },
-              orderBy: { date: "desc" },
-          });
 
-          // Combiner les posts des abonnements et les autres posts
-          const sortedPosts = [...abonnementsPosts, ...autresPosts];
-
-          const accueilPosts = sortedPosts.map(post => ({
+          const accueilPosts = abonnementsPosts.map(post => ({
               id: post.id,
               auteur: post.user.nom,
               titre: post.titre,
