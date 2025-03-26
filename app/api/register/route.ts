@@ -31,8 +31,10 @@ export async function POST(req: Request) {
         nom,
         email,
         mdp: hashedPassword,
-        abonnements: [], // important !
+        abonnements: [], 
         abonnés: [],
+        //créer une bio (def par default dans le prisma schema)
+        bio: "Bonjour, je suis nouveau sur Wroum-Wroum !",
       },
     });
 
