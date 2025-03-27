@@ -18,6 +18,10 @@ export default function EditProfilePage() {
   const [isEditingPseudo, setIsEditingPseudo] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  const [selectedFile, setSelectedFile] = useState<File | null>(null); // Fichier sélectionné
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null); // Message d'upload
+  const [isUploading, setIsUploading] = useState(false); // Indicateur d'upload
+
   // Fonction pour récupérer les informations existantes
   const fetchProfile = async () => {
     if (!session?.user?.id) return;
@@ -112,6 +116,45 @@ export default function EditProfilePage() {
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setSelectedFile(file);
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile || !session?.user?.id) {
+      setUploadMessage("Veuillez sélectionner une image et vous assurer que vous êtes connecté.");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadMessage(null);
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+    formData.append("userId", session.user.id);
+
+    try {
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setUploadMessage("Photo de profil mise à jour avec succès !");
+      } else {
+        setUploadMessage(data.error || "Une erreur est survenue lors de l'upload.");
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'upload :", error);
+      setUploadMessage("Une erreur est survenue lors de l'upload.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   if (!session?.user) {
     router.push("/"); // Redirige vers la page d'accueil si l'utilisateur n'est pas connecté
     return null;
@@ -194,6 +237,29 @@ export default function EditProfilePage() {
                 </Button>
               </div>
             )}
+          </div>
+
+          {/* Photo de profil */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Photo de profil</label>
+            <div className="flex items-center gap-4 mt-2">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="flex-1"
+              />
+              <Button
+                onClick={handleUpload}
+                disabled={isUploading}
+                className={`bg-blue-600 hover:bg-blue-700 ${
+                  isUploading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                {isUploading ? "Upload en cours..." : "Uploader"}
+              </Button>
+            </div>
+            {uploadMessage && <p className="mt-2 text-sm text-gray-600">{uploadMessage}</p>}
           </div>
         </div>
       </div>

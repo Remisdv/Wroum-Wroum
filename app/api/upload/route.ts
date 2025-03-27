@@ -25,11 +25,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "userId est requis" }, { status: 400 });
       }
 
-        // Vérifie si l'utilisateur est authentifié 
-        const session = await getServerSession();
-        if (!session || session.user.id !== userId) {
-            return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
-        }
+        
 
         // Enregistrer l'image dans le dossier "public/uploads"
         const bytes = await file.arrayBuffer();
