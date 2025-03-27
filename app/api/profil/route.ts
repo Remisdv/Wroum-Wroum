@@ -24,10 +24,8 @@ export async function GET(req: Request) {
         // Traiter les abonnements selon leur type (chaîne ou tableau)
         let abonnements = [];
         if (Array.isArray(user.abonnements)) {
-            // Si c'est déjà un tableau, l'utiliser directement
             abonnements = user.abonnements;
         } else if (typeof user.abonnements === "string" && user.abonnements.trim() !== "") {
-            // Si c'est une chaîne JSON, la parser
             try {
                 abonnements = JSON.parse(user.abonnements);
             } catch (e) {
@@ -38,10 +36,8 @@ export async function GET(req: Request) {
         // Traiter les abonnés selon leur type (chaîne ou tableau)
         let abonnes = [];
         if (Array.isArray(user.abonnés)) {
-            // Si c'est déjà un tableau, l'utiliser directement
             abonnes = user.abonnés;
         } else if (typeof user.abonnés === "string" && user.abonnés.trim() !== "") {
-            // Si c'est une chaîne JSON, la parser
             try {
                 abonnes = JSON.parse(user.abonnés);
             } catch (e) {
@@ -49,15 +45,11 @@ export async function GET(req: Request) {
             }
         }
 
-        console.log("Type d'abonnements:", typeof user.abonnements, "Valeur:", user.abonnements);
-        console.log("Type d'abonnés:", typeof user.abonnés, "Valeur:", user.abonnés);
-        console.log("Abonnements traités (longueur):", abonnements.length);
-        console.log("Abonnés traités (longueur):", abonnes.length);
-
         const affichageprofil = {
             id: user.id,
             nom: user.nom,
             email: user.email,
+            bio: user.bio || null, // Ajout de la bio
             posts: user.posts.length,
             abonnements: abonnements.length,
             abonnes: abonnes.length,

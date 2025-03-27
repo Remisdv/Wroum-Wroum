@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Avatar } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Share2, Edit, BarChart2, User, Users } from "lucide-react";
+import { Heart, MessageCircle, Share2, Edit, BarChart2 } from "lucide-react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -47,8 +47,9 @@ export default function ProfilePage() {
     posts: 0,
     abonnements: 0,
     abonnes: 0,
-    totalLikes: 0
+    totalLikes: 0,
   });
+  const [bio, setBio] = useState<string | null>(null); // Ajouter un état pour la bio
 
   // Fonction pour récupérer les posts de l'utilisateur connecté
   const fetchUserPosts = async () => {
@@ -61,15 +62,15 @@ export default function ProfilePage() {
       }
       const data = await response.json();
       setUserPosts(data);
-      
+
       // Calculer le nombre total de likes
       const totalLikes = data.reduce((sum: number, post: Post) => sum + post.nbLikes, 0);
-      
+
       // Mettre à jour les statistiques
-      setProfileStats(prev => ({
+      setProfileStats((prev) => ({
         ...prev,
         posts: data.length,
-        totalLikes
+        totalLikes,
       }));
     } catch (error) {
       console.error("Erreur lors de la récupération des posts :", error);
@@ -89,14 +90,16 @@ export default function ProfilePage() {
       }
       const data = await response.json();
       console.log("Données du profil récupérées:", data);
-      
+
       // Mettre à jour les statistiques d'abonnements/abonnés
-      // Utiliser data.abonnes (sans accent) pour correspondre à la propriété renvoyée par l'API
-      setProfileStats(prev => ({
+      setProfileStats((prev) => ({
         ...prev,
         abonnements: data.abonnements || 0,
-        abonnes: data.abonnes || 0  // C'est ici la modification
+        abonnes: data.abonnes || 0,
       }));
+
+      // Mettre à jour la bio
+      setBio(data.bio || ""); // Ajouter la bio récupérée
     } catch (error) {
       console.error("Erreur lors de la récupération des statistiques :", error);
     }
@@ -193,17 +196,17 @@ export default function ProfilePage() {
               <div className="flex justify-between mb-4">
                 <div>
                   <h1 className="text-2xl font-bold text-blue-900 mb-2">{session.user.name || "Utilisateur"}</h1>
-                  <p className="text-gray-600 mb-4">Bienvenue sur votre profil !</p>
+                  <p className="text-gray-600 mb-4">{bio}</p>
                 </div>
                 <div className="space-x-2">
-                  <Button 
-                    variant="outline" 
-                    className="border-blue-200 text-blue-700"
-                    onClick={handleEditProfile}
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Modifier le profil
-                  </Button>
+                <Button
+                  variant="outline"
+                  className="border-blue-200 text-blue-700"
+                  onClick={() => router.push("/profile/edit-profile")} // Nouvelle URL
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Modifier le profil
+                </Button>
                   <Button
                     variant="outline"
                     className="border-blue-200 text-blue-700"
