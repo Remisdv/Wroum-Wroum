@@ -34,6 +34,7 @@ export async function POST(req: Request) {
         abonnements: [], 
         abonnés: [],
         bio: "Bonjour, je suis nouveau sur Wroum-Wroum !",
+        photoProfil: "/default-profile.JPEG",
       },
     });
 

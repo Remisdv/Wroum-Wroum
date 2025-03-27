@@ -8,15 +8,24 @@ const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
     try {
-        const formData = await req.formData();
-        const file = formData.get("file") as File;
-        const userId = formData.get("userId") as string;
+      const formData = await req.formData();
+      console.log("FormData reçu :", formData);
+  
+      const file = formData.get("file") as File;
+      const userId = formData.get("userId") as string;
+  
+      console.log("Fichier reçu :", file);
+      console.log("ID utilisateur :", userId);
+  
+      if (!file) {
+        return NextResponse.json({ error: "Aucun fichier reçu" }, { status: 400 });
+      }
+  
+      if (!userId) {
+        return NextResponse.json({ error: "userId est requis" }, { status: 400 });
+      }
 
-        if (!file) {
-            return NextResponse.json({ error: "Aucun fichier reçu" }, { status: 400 });
-        }
-
-        // Vérifie si l'utilisateur est authentifié (avec NextAuth par exemple)
+        // Vérifie si l'utilisateur est authentifié 
         const session = await getServerSession();
         if (!session || session.user.id !== userId) {
             return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
@@ -26,20 +35,19 @@ export async function POST(req: Request) {
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
 
-        const filePath = path.join(process.cwd(), "public/uploads", file.name);
+        // Générer un nom de fichier unique (pour les conflits)
+        const uniqueFileName = `${Date.now()}-${file.name}`;
+        const filePath = path.join(process.cwd(), "public/uploads", uniqueFileName);
         await writeFile(filePath, new Uint8Array(buffer));
 
-        // Créer l'URL de l'image téléchargée
-        const imageUrl = `/uploads/${file.name}`;
+        const imageUrl = `/uploads/${uniqueFileName}`;
 
-        // Mettre à jour le profil de l'utilisateur avec l'URL de la photo
         const user = await prisma.user.update({
             where: { id: userId },
-            data: { photoProfil: imageUrl }
+            data: { photoProfil: imageUrl },
         });
 
         return NextResponse.json({ message: "Photo de profil mise à jour", url: imageUrl });
-
     } catch (error) {
         console.error("Erreur lors de l'upload de l'image :", error);
         return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
