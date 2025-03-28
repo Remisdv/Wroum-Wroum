@@ -101,17 +101,26 @@ export default function ProfilePage() {
       }
       const data = await response.json();
 
-      setProfileStats((prev) => ({
-        ...prev,
-        abonnements: data.abonnements?.length || 0,
-        abonnes: data.abonnes?.length || 0,
-      }));
-
-      setBio(data.bio || "Passionné d'automobile et de mécanique.");
-    } catch (error) {
-      console.error("Erreur lors de la récupération des statistiques :", error);
+    // Mettre à jour la session avec l'image de profil si elle existe
+    if (data.photoProfile && !session.user.image) {
+      console.log("Mise à jour de la photo de profil avec:", data.photoProfile);
+      setProfilePicture(data.photoProfile);
     }
-  };
+
+    setProfileStats((prev) => ({
+      ...prev,
+      abonnements: data.abonnements?.length || 0,
+      abonnes: data.abonnes?.length || 0,
+    }));
+
+    setBio(data.bio || "Passionné d'automobile et de mécanique.");
+  } catch (error) {
+    console.error("Erreur lors de la récupération des statistiques :", error);
+  }
+};
+
+// Ajoutez cet état pour stocker l'URL de la photo de profil
+const [profilePicture, setProfilePicture] = useState<string | null>(null);
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -212,6 +221,7 @@ export default function ProfilePage() {
       ['clean']
     ],
   };
+  console.log("Photo de profil:", session.user.image);
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
@@ -236,12 +246,22 @@ export default function ProfilePage() {
             <div className="flex flex-col md:flex-row">
               {/* Avatar et infos de base */}
               <div className="p-8 flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-6">
-                <div className="relative group">
-                  <Avatar className="w-32 h-32 border-4 border-white shadow-md" />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                    <Edit className="w-6 h-6 text-white" />
-                  </div>
-                </div>
+              <div className="relative group">
+              <Avatar className="w-32 h-32 border-4 border-white shadow-md">
+                {(profilePicture || session.user.image) ? (
+                  <img 
+                    src={profilePicture || session.user.image || undefined} 
+                    alt={session.user.name || "Utilisateur"} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="w-16 h-16 text-gray-400" />
+                )}
+              </Avatar>
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                <Edit className="w-6 h-6 text-white" />
+              </div>
+            </div>
                 
                 <div className="text-center md:text-left">
                   <h1 className="text-2xl font-bold text-gray-800 mb-2">{session.user.name || "Utilisateur"}</h1>
@@ -513,15 +533,25 @@ export default function ProfilePage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1, duration: 0.3 }}
                   >
-                    <Link href={`/post/${post.id}?from=profile`}>
-                      <Card className="hover:shadow-md transition-all duration-300 overflow-hidden group border-blue-100 cursor-pointer">
-                        <div className="p-6">
-                          <div className="flex items-start gap-4">
-                            <Avatar className="w-12 h-12 border-2 border-blue-100" />
-                            <div className="flex-1">
-                              <h3 className="text-lg font-semibold text-gray-800 group-hover:text-blue-700 transition-colors">
-                                {post.titre}
-                              </h3>
+                  <Link href={`/post/${post.id}?from=profile`}>
+                    <Card className="hover:shadow-md transition-all duration-300 overflow-hidden group border-blue-100 cursor-pointer">
+                      <div className="p-6">
+                        <div className="flex items-start gap-4">
+                          <Avatar className="w-12 h-12 border-2 border-blue-100">
+                            {(profilePicture || session.user.image) ? (
+                              <img 
+                                src={profilePicture || session.user.image || undefined} 
+                                alt={session.user.name || "Utilisateur"} 
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <User className="w-6 h-6 text-gray-400" />
+                            )}
+                          </Avatar>
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-gray-800 group-hover:text-blue-700 transition-colors">
+                              {post.titre}
+                            </h3>
                               <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
                                 <User className="w-3 h-3" />
                                 <span>{session.user.name}</span>
