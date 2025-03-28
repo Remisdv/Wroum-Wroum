@@ -30,13 +30,17 @@ export default function Home() {
   const fetchPosts = async (page: number) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/posts?page=${page}&pageSize=1`);
+      const response = await fetch(`/api/posts/get?page=${page}&pageSize=3`);
       const data: Post[] = await response.json();
 
       if (data.length === 0) {
         setHasMore(false);
       } else {
-        setPosts((prevPosts) => [...prevPosts, ...data]);
+        setPosts((prevPosts) => {
+          const existingIds = new Set(prevPosts.map((post) => post.id));
+          const newPosts = data.filter((post) => !existingIds.has(post.id));
+          return [...prevPosts, ...newPosts];
+        });
       }
     } catch (error) {
       console.error("Erreur lors de la récupération des posts :", error);

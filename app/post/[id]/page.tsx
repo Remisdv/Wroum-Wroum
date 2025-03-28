@@ -63,7 +63,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        const response = await fetch(`/api/posts?postId=${params.id}`);
+        const response = await fetch(`/api/posts/get?postId=${params.id}`);
         if (!response.ok) throw new Error("Post introuvable");
     
         const data: Post = await response.json();
@@ -87,7 +87,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
 
     const fetchComments = async () => {
       try {
-        const response = await fetch(`/api/comments?postId=${params.id}`);
+        const response = await fetch(`/api/comments/get?postId=${params.id}`);
         if (!response.ok) {
           throw new Error("Erreur lors de la récupération des commentaires");
         }
@@ -145,7 +145,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
     }
 
     try {
-      const response = await fetch("/api/comments", {
+      const response = await fetch("/api/comments/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
