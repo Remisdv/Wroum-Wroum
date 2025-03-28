@@ -159,7 +159,7 @@ export default function ProfilePage() {
 
   const handleEditProfile = () => {
     // Navigation vers la page d'édition du profil
-    router.push("/profile/edit");
+    router.push("/profile/edit-profile");
   };
 
   const handleViewStats = () => {
