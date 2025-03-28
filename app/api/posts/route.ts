@@ -3,7 +3,7 @@
 
 // const prisma = new PrismaClient();
 
-// // ➕ Création d'un post
+// //  Création d'un post
 // export async function POST(req: Request) {
 //   try {
 //     const { titre, contenu, userId } = await req.json();

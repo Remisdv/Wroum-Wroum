@@ -36,7 +36,11 @@ export default function Home() {
       if (data.length === 0) {
         setHasMore(false);
       } else {
-        setPosts((prevPosts) => [...prevPosts, ...data]);
+        setPosts((prevPosts) => {
+          const existingIds = new Set(prevPosts.map((post) => post.id));
+          const newPosts = data.filter((post) => !existingIds.has(post.id));
+          return [...prevPosts, ...newPosts];
+        });
       }
     } catch (error) {
       console.error("Erreur lors de la récupération des posts :", error);
