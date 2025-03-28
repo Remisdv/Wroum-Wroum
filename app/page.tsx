@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { NavBar } from "@/components/nav-bar";
 import { 
   Heart, MessageCircle, Share2, Clock, TrendingUp, Filter, 
-  Search, ChevronDown, BookOpen, Award, Bookmark, Image 
+  Search, ChevronDown, BookOpen, Award, Bookmark, Image, User
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
@@ -23,8 +23,8 @@ interface Post {
   date: string;
   nbLikes: number;
   nbCommentaires?: number;
+  auteurPhoto?: string;
 }
-
 const categories = [
   { name: "Tous", icon: <BookOpen className="w-4 h-4" /> },
   { name: "Tendances", icon: <TrendingUp className="w-4 h-4" /> },
@@ -42,6 +42,8 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState("Tous");
   const [showFilters, setShowFilters] = useState(false);
   const feedRef = useRef<HTMLDivElement>(null);
+  const [authorProfiles, setAuthorProfiles] = useState<{[key: string]: string}>({});
+
 
   const fetchPosts = async (page: number) => {
     setIsLoading(true);
@@ -57,6 +59,10 @@ export default function Home() {
           const newPosts = data.filter((post) => !existingIds.has(post.id));
           return [...prevPosts, ...newPosts];
         });
+
+        // Récupérer les photos de profil pour les nouveaux auteurs
+        const authors = data.map(post => post.auteur);
+        fetchAuthorProfiles(authors);
       }
     } catch (error) {
       console.error("Erreur lors de la récupération des posts :", error);
@@ -65,6 +71,43 @@ export default function Home() {
       setIsInitialLoading(false);
     }
   };
+
+
+  const fetchAuthorProfiles = async (authors: string[]) => {
+    const uniqueAuthors = Array.from(new Set(authors));
+    
+    for (const author of uniqueAuthors) {
+      if (!authorProfiles[author]) {
+        try {
+          // Utilisez votre API existante ou créez un nouveau endpoint
+          const response = await fetch(`/api/navbarre?query=@${author}`);
+          if (response.ok) {
+            const data = await response.json();
+            const userResult = data.find((result: any) => 
+              result.type === "user" && result.nom === author
+            );
+            
+            if (userResult && userResult.id) {
+              const profileResponse = await fetch(`/api/profil?userId=${userResult.id}`);
+              if (profileResponse.ok) {
+                const profileData = await profileResponse.json();
+                
+                if (profileData.photoProfile) {
+                  setAuthorProfiles(prev => ({
+                    ...prev,
+                    [author]: profileData.photoProfile
+                  }));
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Erreur lors de la récupération du profil pour ${author}:`, error);
+        }
+      }
+    }
+  };
+
 
   useEffect(() => {
     fetchPosts(page);
@@ -321,12 +364,21 @@ export default function Home() {
                       className="flex items-center gap-3 group"
                       onClick={(e) => navigateToUserProfile(post.auteur, e)}
                     >
-                      <Avatar className="w-12 h-12 border-2 border-gray-200 group-hover:border-blue-400 transition-all" />
+                        <Avatar className="w-12 h-12 border-2 border-gray-200 group-hover:border-blue-400 transition-all">
+                        {authorProfiles[post.auteur] ? (
+                          <img 
+                            src={authorProfiles[post.auteur]} 
+                            alt={post.auteur} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <User className="w-6 h-6 text-gray-400" />
+                        )}
+                      </Avatar>
                       <div>
                         <h4 className="font-medium text-gray-800 group-hover:text-blue-600 transition-colors">
                           {post.auteur}
                         </h4>
-                        <p className="text-sm text-gray-500">Passionné automobile</p>
                       </div>
                     </div>
                     
