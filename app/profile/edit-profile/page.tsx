@@ -56,17 +56,18 @@ export default function EditProfilePage() {
     setHasPendingChanges(hasChanges);
   }, [bio, originalBio, pseudo, originalPseudo, selectedFile]);
 
-  // Récupérer les informations existantes
   const fetchProfile = async () => {
     if (!session?.user?.id) return;
-
+  
     try {
-      const response = await fetch(`/api/profile?userId=${session.user.id}`);
+      const response = await fetch(`/api/profil?userId=${session.user.id}`);
       if (!response.ok) {
         throw new Error("Erreur lors de la récupération des informations du profil");
       }
       const data = await response.json();
-
+      
+      console.log("Données du profil récupérées:", data);
+  
       // Mettre à jour la bio et le pseudo avec les données récupérées
       setBio(data.bio || "");
       setOriginalBio(data.bio || "");
@@ -74,8 +75,12 @@ export default function EditProfilePage() {
       setOriginalPseudo(data.nom || "");
       
       // Récupérer l'URL de l'image de profil si disponible
-      if (data.profileImage) {
-        setProfileImage(data.profileImage);
+      // Assurez-vous que la propriété s'appelle "photoProfile" comme dans votre API
+      if (data.photoProfile) {
+        console.log("Photo de profil trouvée:", data.photoProfile);
+        setProfileImage(data.photoProfile);
+      } else {
+        console.log("Aucune photo de profil trouvée dans les données de l'API");
       }
     } catch (error) {
       console.error("Erreur lors de la récupération des informations du profil :", error);
