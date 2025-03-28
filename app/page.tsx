@@ -46,7 +46,7 @@ export default function Home() {
   const fetchPosts = async (page: number) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/posts?page=${page}&pageSize=1`);
+      const response = await fetch(`/api/posts/get?page=${page}&pageSize=3`);
       const data: Post[] = await response.json();
 
       if (data.length === 0) {
