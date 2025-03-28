@@ -36,9 +36,10 @@ model Signalement {
   type      String
   postId    String?  @db.ObjectId
   userId    String   @db.ObjectId
-  titre     String   // Ajoutez ce champ
-  contenu   String   // Ajoutez ce champ
+  titre     String
+  contenu   String
   date      DateTime @default(now())
+  status    String   @default("en_attente") // Ajoutez ce champ
  
   post      Post?    @relation("PostSignalements", fields: [postId], references: [id])
 }

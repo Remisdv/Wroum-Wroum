@@ -5,10 +5,27 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { NavBar } from "@/components/nav-bar";
 import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { 
   Heart, MessageCircle, Share2, Clock, ChevronLeft, 
   User, Eye, BookmarkPlus, Flag, Copy, Send, Smile, 
-  AlertTriangle, ThumbsUp, MoreHorizontal
+  AlertTriangle, ThumbsUp, MoreHorizontal, Edit, Trash2
 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
@@ -28,13 +45,15 @@ declare module "next-auth" {
 }
 
 interface Comment {
-  id: string;
+  commentaireId: number;  // ID numérique des commentaires
   contenu: string;
   date: string;
+  userId: string;
   user?: {
     name: string;
     id?: string;
   };
+  signalements: any[];
 }
 
 interface Post {
@@ -52,6 +71,12 @@ interface Post {
 }
 
 export default function PostPage({ params }: { params: { id: string } }) {
+  const [reportType, setReportType] = useState<"post" | "commentaire">("post");
+  const [reportTargetId, setReportTargetId] = useState<string>("");
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("contenu_inapproprie");
+  const [reportCustomReason, setReportCustomReason] = useState("");
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [hasLiked, setHasLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [viewsCount, setViewsCount] = useState(0);
@@ -116,6 +141,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
           throw new Error("Erreur lors de la récupération des commentaires");
         }
         const data = await response.json();
+        console.log("Commentaires reçus:", data); // Log pour voir la structure
         setComments(data);
       } catch (error) {
         console.error("Erreur lors de la récupération des commentaires :", error);
@@ -160,6 +186,93 @@ export default function PostPage({ params }: { params: { id: string } }) {
       fetchData();
     }
   }, [params.id, status, session?.user?.id]);
+
+  const handleSubmitReport = async () => {
+    // Vérifier si l'utilisateur est connecté
+    if (!session?.user?.id) return;
+    
+    // Vérifier si un ID cible est défini
+    if (!reportTargetId) {
+      console.error("ID de la cible du signalement manquant");
+      return;
+    }
+    
+    // Vérification pour la raison personnalisée
+    if (reportReason === "autre" && !reportCustomReason.trim()) {
+      // Toast d'erreur
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-4 right-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-lg flex items-center z-50';
+      toast.innerHTML = `
+        <div class="mr-2">⚠️</div>
+        <div>Veuillez préciser la raison du signalement</div>
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => document.body.removeChild(toast), 3000);
+      return;
+    }
+    
+    // Logs de débogage
+    console.log("Envoi du signalement:", {
+      type: reportType,
+      targetId: reportTargetId,
+      postId: params.id,
+      commentId: reportType === "commentaire" ? parseInt(reportTargetId) : undefined
+    });
+    
+    setIsSubmittingReport(true);
+    
+    try {
+      const response = await fetch("/api/signaler", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: reportType,
+          postId: params.id,
+          // Convertir en nombre pour les commentaires
+          commentId: reportType === "commentaire" ? parseInt(reportTargetId) : undefined,
+          userId: session.user.id,
+          motif: reportReason,
+          contenu: reportCustomReason.trim() || "Aucun détail fourni",
+        }),
+      });
+      
+      const data = await response.json();
+      console.log("Réponse du serveur:", data);
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Erreur lors du signalement");
+      }
+    
+      // Toast de succès
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-4 right-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg shadow-lg flex items-center z-50';
+      toast.innerHTML = `
+        <div class="mr-2">✓</div>
+        <div>Merci pour votre signalement. Notre équipe va l'examiner.</div>
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => document.body.removeChild(toast), 3000);
+      
+      // Réinitialiser et fermer le dialogue
+      setReportCustomReason("");
+      setReportReason("contenu_inapproprie");
+      setReportDialogOpen(false);
+    } catch (error) {
+      console.error("Erreur lors du signalement :", error);
+      
+      // Toast d'erreur
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-4 right-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-lg flex items-center z-50';
+      toast.innerHTML = `
+        <div class="mr-2">⚠️</div>
+        <div>Une erreur s'est produite lors du signalement</div>
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => document.body.removeChild(toast), 3000);
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
 
   const handleCreateComment = async () => {
     if (!newComment.trim()) {
@@ -298,10 +411,11 @@ export default function PostPage({ params }: { params: { id: string } }) {
     }, 100);
   };
   
-  const toggleReaction = (commentId: string) => {
+  // Modifier la fonction pour utiliser commentaireId (en string) comme clé
+  const toggleReaction = (commentId: number) => {
     setShowReactions(prev => ({
       ...prev,
-      [commentId]: !prev[commentId]
+      [commentId.toString()]: !prev[commentId.toString()]
     }));
   };
 
@@ -447,7 +561,45 @@ export default function PostPage({ params }: { params: { id: string } }) {
                     size="sm"
                     className="text-gray-500 hover:text-gray-700"
                   >
-                    <MoreHorizontal className="h-5 w-5" />
+                    <div className="relative">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="text-gray-500 hover:text-gray-700"
+                          >
+                            <MoreHorizontal className="h-5 w-5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          {isAuthor ? (
+                            <>
+                              <DropdownMenuItem className="text-blue-600 cursor-pointer">
+                                <Edit className="h-4 w-4 mr-2" />
+                                Modifier
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-red-600 cursor-pointer">
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Supprimer
+                              </DropdownMenuItem>
+                            </>
+                          ) : (
+                            <DropdownMenuItem 
+                              className="text-orange-600 cursor-pointer"
+                              onClick={() => {
+                                setReportType("post");
+                                setReportTargetId(post.id);
+                                setReportDialogOpen(true);
+                              }}
+                            >
+                              <Flag className="h-4 w-4 mr-2" />
+                              Signaler
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </Button>
                 </div>
               </div>
@@ -476,10 +628,6 @@ export default function PostPage({ params }: { params: { id: string } }) {
                   </span>
                 </div>
                 
-                <div className="text-sm text-gray-500 flex items-center gap-1">
-                  <Share2 className="h-4 w-4" />
-                  Partager
-                </div>
               </div>
             </div>
             
@@ -517,8 +665,21 @@ export default function PostPage({ params }: { params: { id: string } }) {
               <div className="relative flex-1">
                 <Button
                   variant="ghost"
-                  className="w-full rounded-none text-gray-700 hover:text-green-600 flex items-center justify-center py-3"
-                  onClick={() => setShowShareOptions(!showShareOptions)}
+                  className="text-gray-700"
+                  onClick={() => {
+                    // Copier le lien
+                    navigator.clipboard.writeText(window.location.href);
+                    
+                    // Toast de succès
+                    const toast = document.createElement('div');
+                    toast.className = 'fixed bottom-4 right-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg shadow-lg flex items-center z-50';
+                    toast.innerHTML = `
+                      <div class="mr-2">✓</div>
+                      <div>Lien copié dans le presse-papier</div>
+                    `;
+                    document.body.appendChild(toast);
+                    setTimeout(() => document.body.removeChild(toast), 3000);
+                  }}
                 >
                   <Share2 className="h-5 w-5 mr-2" />
                   Partager
@@ -672,7 +833,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
               ) : (
                 comments.map((comment, index) => (
                   <motion.div
-                    key={comment.id}
+                    key={comment.commentaireId} // Utiliser commentaireId au lieu de id
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05, duration: 0.3 }}
@@ -687,7 +848,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
                             <div>
                               <div className="font-medium text-gray-800">
                                 {comment.user?.name || "Utilisateur"} 
-                                {comment.user?.id === session?.user?.id && (
+                                {comment.userId === session?.user?.id && (
                                   <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Vous</span>
                                 )}
                               </div>
@@ -701,7 +862,46 @@ export default function PostPage({ params }: { params: { id: string } }) {
                               size="sm"
                               className="text-gray-400 hover:text-gray-700 p-1 h-auto"
                             >
-                              <MoreHorizontal className="h-4 w-4" />
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-gray-400 hover:text-gray-700 p-1 h-auto"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48">
+                                  {comment.userId === session?.user?.id ? (
+                                    <>
+                                      <DropdownMenuItem className="text-blue-600 cursor-pointer">
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Modifier
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem className="text-red-600 cursor-pointer">
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Supprimer
+                                      </DropdownMenuItem>
+                                    </>
+                                  ) : (
+                                    <DropdownMenuItem 
+                                      className="text-orange-600 cursor-pointer"
+                                      onClick={() => {
+                                        // Utiliser commentaireId au lieu de id
+                                        console.log("Signalement de commentaire:", comment.commentaireId);
+                                        setReportType("commentaire");
+                                        // Convertir en chaîne
+                                        setReportTargetId(comment.commentaireId.toString());
+                                        setReportDialogOpen(true);
+                                      }}
+                                    >
+                                      <Flag className="h-4 w-4 mr-2" />
+                                      Signaler
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </Button>
                           </div>
                           
@@ -713,14 +913,14 @@ export default function PostPage({ params }: { params: { id: string } }) {
                                 variant="ghost"
                                 size="sm"
                                 className="text-gray-500 hover:text-blue-600 p-1 h-auto text-xs"
-                                onClick={() => toggleReaction(comment.id)}
+                                onClick={() => toggleReaction(comment.commentaireId)}
                               >
                                 <ThumbsUp className="h-3.5 w-3.5 mr-1" />
                                 J'aime
                               </Button>
                               
                               <AnimatePresence>
-                                {showReactions[comment.id] && (
+                                {showReactions[comment.commentaireId.toString()] && (
                                   <motion.div
                                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -734,7 +934,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
                                         className="hover:bg-gray-100 p-1 rounded-full transition-colors"
                                         onClick={() => {
                                           // Simuler réaction
-                                          toggleReaction(comment.id);
+                                          toggleReaction(comment.commentaireId);
                                           
                                           // Toast
                                           const toast = document.createElement('div');
@@ -806,6 +1006,109 @@ export default function PostPage({ params }: { params: { id: string } }) {
           </Button>
         </div>
       </div>
+
+      {/* Dialogue de signalement */}
+      <Dialog 
+        open={reportDialogOpen} 
+        onOpenChange={(open) => {
+          setReportDialogOpen(open);
+          if (!open) {
+            // Réinitialiser les états quand on ferme le dialogue
+            setReportReason("contenu_inapproprie");
+            setReportCustomReason("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-orange-600">
+              <Flag className="h-5 w-5 mr-2" />
+              Signaler ce {reportType === "post" ? "contenu" : "commentaire"}
+            </DialogTitle>
+            <DialogDescription>
+              Aidez-nous à comprendre le problème avec ce contenu. Qu'est-ce qui ne va pas ?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <RadioGroup value={reportReason} onValueChange={setReportReason}>
+              <div className="space-y-3">
+                <div className="flex items-start space-x-2">
+                  <RadioGroupItem value="contenu_inapproprie" id="r1" />
+                  <Label htmlFor="r1" className="font-normal cursor-pointer">
+                    <div className="font-medium">Contenu inapproprié</div>
+                    <p className="text-gray-500 text-sm">Contenu offensant, vulgaire ou qui viole les règles</p>
+                  </Label>
+                </div>
+                
+                <div className="flex items-start space-x-2">
+                  <RadioGroupItem value="spam" id="r2" />
+                  <Label htmlFor="r2" className="font-normal cursor-pointer">
+                    <div className="font-medium">Spam ou publicité</div>
+                    <p className="text-gray-500 text-sm">Contenu répétitif ou publicitaire non sollicité</p>
+                  </Label>
+                </div>
+                
+                <div className="flex items-start space-x-2">
+                  <RadioGroupItem value="fausse_information" id="r3" />
+                  <Label htmlFor="r3" className="font-normal cursor-pointer">
+                    <div className="font-medium">Fausse information</div>
+                    <p className="text-gray-500 text-sm">Informations trompeuses ou incorrectes</p>
+                  </Label>
+                </div>
+                
+                <div className="flex items-start space-x-2">
+                  <RadioGroupItem value="autre" id="r4" />
+                  <Label htmlFor="r4" className="font-normal cursor-pointer">
+                    <div className="font-medium">Autre raison</div>
+                    <p className="text-gray-500 text-sm">Le problème ne correspond à aucune option ci-dessus</p>
+                  </Label>
+                </div>
+              </div>
+            </RadioGroup>
+
+            <div className="mt-4">
+              <Label htmlFor="custom-reason" className="text-sm font-medium">
+                Détails du signalement
+              </Label>
+              <textarea
+                id="custom-reason"
+                className="mt-1 w-full rounded-md border border-gray-300 p-2 text-sm"
+                placeholder={reportReason === "autre" 
+                  ? "Décrivez le problème en détail..." 
+                  : "Fournissez des détails supplémentaires (facultatif)"}
+                value={reportCustomReason}
+                onChange={(e) => setReportCustomReason(e.target.value)}
+                rows={3}
+              ></textarea>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setReportDialogOpen(false)}
+            >
+              Annuler
+            </Button>
+            <Button 
+              variant="default"
+              className="bg-orange-600 hover:bg-orange-700"
+              onClick={handleSubmitReport}
+              disabled={isSubmittingReport}
+            >
+              {isSubmittingReport ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Signalement...
+                </>
+              ) : (
+                "Signaler"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

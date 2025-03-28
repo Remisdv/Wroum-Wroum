@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export async function GET (req: Request) {
+export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const userId = searchParams.get('userId');
@@ -18,11 +18,13 @@ export async function GET (req: Request) {
             return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 });
         }
 
+        // Utilisez "admin" ou "ADMIN" selon ce qui est dans votre base de données
         if (user.role !== "admin") {
             return NextResponse.json({ error: "Vous n'êtes pas autorisé à accéder à cette ressource" }, { status: 403 });
         }
 
-        return NextResponse.json({ message: "Accès autorisé" });
+        // Ajoutez isAdmin pour plus de clarté dans la réponse
+        return NextResponse.json({ message: "Accès autorisé", isAdmin: true });
     }
     catch (error) {
         console.error("Erreur lors de la vérification de l'utilisateur :", error);
