@@ -28,29 +28,48 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
+// Interfaces pour les types de données
 interface Signalement {
   id: string;
-  type: "post" | "commentaire";
   date: string;
-  titre: string;
+  motif?: string;
   contenu: string;
   userId: string;
+  status: "en_attente" | "traité" | "ignoré";
+}
+
+interface SignalementGroup {
+  contentId: string;
+  type: "post" | "commentaire";
   postId?: string;
-  commentId?: string;
+  commentId?: number;
+  postData?: {
+    id: string;
+    titre: string;
+    contenu: string;
+    date: string;
+  };
+  commentaireData?: {
+    id: number;
+    contenu: string;
+    date: string;
+    postTitre: string;
+    postId: string;
+  };
   auteurId: string;
   auteurNom: string;
-  motif?: string;
-  status: "en_attente" | "traité" | "ignoré";
+  signalements: Signalement[];
+  count: number;
 }
 
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
-  const [signalements, setSignalements] = useState<Signalement[]>([]);
+  const [signalementGroups, setSignalementGroups] = useState<SignalementGroup[]>([]);
   const [activeTab, setActiveTab] = useState<"tous" | "posts" | "commentaires">("tous");
   const [selectedStatus, setSelectedStatus] = useState<string>("tous");
-  const [selectedSignalement, setSelectedSignalement] = useState<Signalement | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<SignalementGroup | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [warningMessage, setWarningMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -92,11 +111,11 @@ export default function AdminDashboard() {
       }
       
       const data = await response.json();
-      setSignalements(data);
+      setSignalementGroups(data);
       
       // Calculer les totaux
-      const postsCount = data.filter((s: Signalement) => s.type === "post").length;
-      const commentsCount = data.filter((s: Signalement) => s.type === "commentaire").length;
+      const postsCount = data.filter((g: SignalementGroup) => g.type === "post").length;
+      const commentsCount = data.filter((g: SignalementGroup) => g.type === "commentaire").length;
       
       setTotalSignalements({
         posts: postsCount,
@@ -111,7 +130,11 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteContent = async () => {
-    if (!selectedSignalement) return;
+    if (!selectedGroup) return;
+    
+    // Utiliser le premier signalement pour avoir un ID
+    const signalementId = selectedGroup.signalements[0]?.id;
+    if (!signalementId) return;
     
     setIsSubmitting(true);
     
@@ -120,12 +143,12 @@ export default function AdminDashboard() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          signalementId: selectedSignalement.id,
-          contentType: selectedSignalement.type,
-          contentId: selectedSignalement.type === "post" 
-            ? selectedSignalement.postId 
-            : selectedSignalement.commentId,
-          userId: selectedSignalement.auteurId
+          signalementId: signalementId,
+          contentType: selectedGroup.type,
+          contentId: selectedGroup.type === "post" 
+            ? selectedGroup.postId 
+            : selectedGroup.commentId,
+          userId: selectedGroup.auteurId
         }),
       });
 
@@ -133,15 +156,10 @@ export default function AdminDashboard() {
         throw new Error("Erreur lors de la suppression");
       }
 
-      // Mettre à jour la liste des signalements
       await fetchSignalements();
-      
-      // Afficher une notification de succès
       showNotification("success", "Contenu supprimé avec succès");
-      
-      // Fermer la boîte de dialogue
       setDeleteConfirmOpen(false);
-      setSelectedSignalement(null);
+      setSelectedGroup(null);
       
     } catch (error) {
       console.error("Erreur de suppression:", error);
@@ -152,7 +170,11 @@ export default function AdminDashboard() {
   };
 
   const handleSendWarning = async () => {
-    if (!selectedSignalement || !warningMessage.trim()) return;
+    if (!selectedGroup || !warningMessage.trim()) return;
+    
+    // Utiliser le premier signalement pour avoir un ID
+    const signalementId = selectedGroup.signalements[0]?.id;
+    if (!signalementId) return;
     
     setIsSubmitting(true);
     
@@ -161,9 +183,9 @@ export default function AdminDashboard() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: selectedSignalement.auteurId,
+          userId: selectedGroup.auteurId,
           message: warningMessage,
-          signalementId: selectedSignalement.id
+          signalementId: signalementId
         }),
       });
 
@@ -171,16 +193,9 @@ export default function AdminDashboard() {
         throw new Error("Erreur lors de l'envoi de l'avertissement");
       }
 
-      // Fermer la boîte de dialogue
       setIsDialogOpen(false);
-      
-      // Réinitialiser le formulaire
       setWarningMessage("");
-      
-      // Mettre à jour les signalements
       await fetchSignalements();
-      
-      // Notification
       showNotification("success", "Avertissement envoyé à l'utilisateur");
       
     } catch (error) {
@@ -213,35 +228,64 @@ export default function AdminDashboard() {
     }, 3000);
   };
 
-  const filteredSignalements = signalements
-    .filter(s => {
+  // Filtrer les signalements
+  const filteredSignalementGroups = signalementGroups
+    .filter(group => {
       // Filtre par type
-      if (activeTab === "posts" && s.type !== "post") return false;
-      if (activeTab === "commentaires" && s.type !== "commentaire") return false;
+      if (activeTab === "posts" && group.type !== "post") return false;
+      if (activeTab === "commentaires" && group.type !== "commentaire") return false;
       
       // Filtre par statut
-      if (selectedStatus !== "tous" && s.status !== selectedStatus) return false;
+      if (selectedStatus !== "tous") {
+        const hasStatus = group.signalements.some(s => s.status === selectedStatus);
+        if (!hasStatus) return false;
+      }
       
       // Filtre par recherche
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
-        return (
-          s.titre?.toLowerCase().includes(searchLower) ||
-          s.contenu?.toLowerCase().includes(searchLower) ||
-          s.auteurNom?.toLowerCase().includes(searchLower)
-        );
+        
+        // Recherche dans le post
+        if (group.type === "post" && group.postData) {
+          return (
+            group.postData.titre?.toLowerCase().includes(searchLower) ||
+            stripHtml(group.postData.contenu).toLowerCase().includes(searchLower) ||
+            group.auteurNom?.toLowerCase().includes(searchLower)
+          );
+        } 
+        // Recherche dans le commentaire
+        else if (group.type === "commentaire" && group.commentaireData) {
+          return (
+            group.commentaireData.contenu?.toLowerCase().includes(searchLower) ||
+            group.auteurNom?.toLowerCase().includes(searchLower)
+          );
+        }
       }
       
       return true;
     })
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    .sort((a, b) => {
+      // Trier par date du dernier signalement
+      const dateA = new Date(a.signalements[0]?.date || 0).getTime();
+      const dateB = new Date(b.signalements[0]?.date || 0).getTime();
+      return dateB - dateA;
+    });
 
   // Pagination
-  const totalPages = Math.ceil(filteredSignalements.length / itemsPerPage);
-  const currentPageItems = filteredSignalements.slice(
+  const totalPages = Math.ceil(filteredSignalementGroups.length / itemsPerPage);
+  const currentPageItems = filteredSignalementGroups.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  // Fonction utilitaire pour nettoyer le HTML
+  const stripHtml = (html: string): string => {
+    if (typeof window !== "undefined") {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      return doc.body.textContent || "";
+    }
+    return html.replace(/<[^>]*>?/gm, '');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -294,7 +338,9 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500">Total des signalements</p>
-                <h3 className="text-2xl font-bold text-gray-800">{signalements.length}</h3>
+                <h3 className="text-2xl font-bold text-gray-800">
+                  {signalementGroups.reduce((acc, group) => acc + group.count, 0)}
+                </h3>
               </div>
             </div>
           </Card>
@@ -393,67 +439,67 @@ export default function AdminDashboard() {
             </div>
             
             <TabsContent value="tous" className="m-0">
-              <SignalementsTable 
-                signalements={currentPageItems}
+              <SignalementsGroupTable 
+                groups={currentPageItems}
                 isLoading={isLoading}
-                onView={(signalement) => {
-                  setSelectedSignalement(signalement);
+                onView={(group) => {
+                  setSelectedGroup(group);
                   setIsDialogOpen(true);
                 }}
-                onDelete={(signalement) => {
-                  setSelectedSignalement(signalement);
+                onDelete={(group) => {
+                  setSelectedGroup(group);
                   setDeleteConfirmOpen(true);
                 }}
-                onWarn={(signalement) => {
-                  setSelectedSignalement(signalement);
+                onWarn={(group) => {
+                  setSelectedGroup(group);
                   setIsDialogOpen(true);
                 }}
               />
             </TabsContent>
             
             <TabsContent value="posts" className="m-0">
-              <SignalementsTable 
-                signalements={currentPageItems} 
+              <SignalementsGroupTable 
+                groups={currentPageItems}
                 isLoading={isLoading}
-                onView={(signalement) => {
-                  setSelectedSignalement(signalement);
+                onView={(group) => {
+                  setSelectedGroup(group);
                   setIsDialogOpen(true);
                 }}
-                onDelete={(signalement) => {
-                  setSelectedSignalement(signalement);
+                onDelete={(group) => {
+                  setSelectedGroup(group);
                   setDeleteConfirmOpen(true);
                 }}
-                onWarn={(signalement) => {
-                  setSelectedSignalement(signalement);
+                onWarn={(group) => {
+                  setSelectedGroup(group);
                   setIsDialogOpen(true);
                 }}
               />
             </TabsContent>
             
             <TabsContent value="commentaires" className="m-0">
-              <SignalementsTable 
-                signalements={currentPageItems}
+              <SignalementsGroupTable 
+                groups={currentPageItems}
                 isLoading={isLoading}
-                onView={(signalement) => {
-                  setSelectedSignalement(signalement);
+                onView={(group) => {
+                  setSelectedGroup(group);
                   setIsDialogOpen(true);
                 }}
-                onDelete={(signalement) => {
-                  setSelectedSignalement(signalement);
+                onDelete={(group) => {
+                  setSelectedGroup(group);
                   setDeleteConfirmOpen(true);
                 }}
-                onWarn={(signalement) => {
-                  setSelectedSignalement(signalement);
+                onWarn={(group) => {
+                  setSelectedGroup(group);
                   setIsDialogOpen(true);
                 }}
               />
             </TabsContent>
             
             {/* Pagination */}
-            {filteredSignalements.length > 0 && (
+            {filteredSignalementGroups.length > 0 && (
               <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
                 <div className="text-sm text-gray-500">
-                  Affichage de {Math.min((currentPage - 1) * itemsPerPage + 1, filteredSignalements.length)} à {Math.min(currentPage * itemsPerPage, filteredSignalements.length)} sur {filteredSignalements.length} signalements
+                  Affichage de {Math.min((currentPage - 1) * itemsPerPage + 1, filteredSignalementGroups.length)} à {Math.min(currentPage * itemsPerPage, filteredSignalementGroups.length)} sur {filteredSignalementGroups.length} signalements
                 </div>
                 
                 <div className="flex items-center gap-2">
@@ -487,25 +533,77 @@ export default function AdminDashboard() {
 
       {/* Dialog pour avertissement */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Avertir l'utilisateur</DialogTitle>
+            <DialogTitle>
+              {selectedGroup?.type === "post" ? "Post signalé" : "Commentaire signalé"}
+            </DialogTitle>
             <DialogDescription>
-              Envoyez un avertissement à {selectedSignalement?.auteurNom} concernant le contenu signalé.
+              {selectedGroup?.count} signalement(s) pour ce contenu
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 my-4">
+            {/* Affichage détaillé du contenu signalé */}
             <div className="bg-gray-50 p-4 rounded-md">
-              <h4 className="font-medium text-gray-800 mb-1">Contenu signalé :</h4>
-              <p className="text-sm text-gray-600">{selectedSignalement?.contenu}</p>
+              {selectedGroup?.type === "post" && selectedGroup?.postData ? (
+                <>
+                  <h4 className="font-medium text-gray-900 mb-2">{selectedGroup.postData.titre}</h4>
+                  <div className="prose prose-sm max-w-none text-gray-700 mb-4 max-h-[200px] overflow-y-auto">
+                    <div dangerouslySetInnerHTML={{ __html: selectedGroup.postData.contenu }} />
+                  </div>
+                </>
+              ) : selectedGroup?.type === "commentaire" && selectedGroup?.commentaireData ? (
+                <>
+                  <h4 className="font-medium text-gray-900 mb-2">
+                    Commentaire sur : {selectedGroup.commentaireData.postTitre}
+                  </h4>
+                  <div className="prose prose-sm max-w-none text-gray-700 mb-4 p-3 bg-white rounded border border-gray-200">
+                    {selectedGroup.commentaireData.contenu}
+                  </div>
+                </>
+              ) : (
+                <p className="text-gray-600">Contenu non disponible</p>
+              )}
               
-              <div className="mt-3 text-sm text-gray-500 flex items-center">
-                <Flag className="w-3 h-3 mr-1" />
-                <span>
-                  Signalé le {selectedSignalement?.date && 
-                    formatDistanceToNow(new Date(selectedSignalement.date), { addSuffix: true, locale: fr })}
-                </span>
+              <div className="flex justify-between text-sm text-gray-500">
+                <div className="flex items-center">
+                  <User className="w-3 h-3 mr-1" />
+                  <span>{selectedGroup?.auteurNom}</span>
+                </div>
+                <div>
+                  {selectedGroup?.type === "post" && selectedGroup?.postData ? (
+                    formatDistanceToNow(new Date(selectedGroup.postData.date), { addSuffix: true, locale: fr })
+                  ) : selectedGroup?.type === "commentaire" && selectedGroup?.commentaireData ? (
+                    formatDistanceToNow(new Date(selectedGroup.commentaireData.date), { addSuffix: true, locale: fr })
+                  ) : (
+                    "Date inconnue"
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Liste des signalements */}
+            <div>
+              <h4 className="font-medium text-gray-900 mb-2">Signalements ({selectedGroup?.count || 0})</h4>
+              <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                {selectedGroup?.signalements.map((signalement, index) => (
+                  <div key={signalement.id} className="bg-white p-3 rounded border border-gray-200">
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm font-medium text-gray-700">
+                        Motif: {signalement.motif || "Non spécifié"}
+                      </span>
+                      <Badge variant="outline" className="border-gray-200 text-gray-600">
+                        {signalement.status === "en_attente" ? "En attente" : 
+                         signalement.status === "traité" ? "Traité" : "Ignoré"}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-1">{signalement.contenu}</p>
+                    <div className="text-xs text-gray-500">
+                      Signalé {formatDistanceToNow(new Date(signalement.date), { addSuffix: true, locale: fr })}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
             
@@ -567,10 +665,27 @@ export default function AdminDashboard() {
           </DialogHeader>
           
           <div className="my-4 p-4 bg-red-50 border border-red-100 rounded-md">
-            <h4 className="font-medium text-gray-800 mb-2">
-              {selectedSignalement?.type === "post" ? "Post" : "Commentaire"} de {selectedSignalement?.auteurNom}
-            </h4>
-            <p className="text-sm text-gray-600 line-clamp-3">{selectedSignalement?.contenu}</p>
+            {selectedGroup?.type === "post" && selectedGroup?.postData ? (
+              <>
+                <h4 className="font-medium text-gray-800 mb-2">
+                  Post de {selectedGroup.auteurNom}
+                </h4>
+                <p className="text-sm font-medium text-gray-700">{selectedGroup.postData.titre}</p>
+                <p className="text-sm text-gray-600 line-clamp-3">
+                  {stripHtml(selectedGroup.postData.contenu)}
+                </p>
+              </>
+            ) : selectedGroup?.type === "commentaire" && selectedGroup?.commentaireData ? (
+              <>
+                <h4 className="font-medium text-gray-800 mb-2">
+                  Commentaire de {selectedGroup.auteurNom}
+                </h4>
+                <p className="text-sm font-medium text-gray-700">Sur: {selectedGroup.commentaireData.postTitre}</p>
+                <p className="text-sm text-gray-600 line-clamp-3">{selectedGroup.commentaireData.contenu}</p>
+              </>
+            ) : (
+              <p className="text-gray-600">Contenu non disponible</p>
+            )}
           </div>
           
           <DialogFooter>
@@ -605,19 +720,19 @@ export default function AdminDashboard() {
   );
 }
 
-// Composant de tableau des signalements
-function SignalementsTable({ 
-  signalements, 
+// Composant de tableau des signalements groupés
+function SignalementsGroupTable({ 
+  groups, 
   isLoading, 
   onView, 
   onDelete, 
   onWarn 
 }: { 
-  signalements: Signalement[];
+  groups: SignalementGroup[];
   isLoading: boolean;
-  onView: (signalement: Signalement) => void;
-  onDelete: (signalement: Signalement) => void;
-  onWarn: (signalement: Signalement) => void;
+  onView: (group: SignalementGroup) => void;
+  onDelete: (group: SignalementGroup) => void;
+  onWarn: (group: SignalementGroup) => void;
 }) {
   if (isLoading) {
     return (
@@ -637,7 +752,7 @@ function SignalementsTable({
     );
   }
 
-  if (signalements.length === 0) {
+  if (groups.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
         <div className="bg-blue-50 p-3 rounded-full mb-4">
@@ -651,6 +766,15 @@ function SignalementsTable({
     );
   }
 
+  // Fonction pour extraire du texte de HTML
+  const stripHtml = (html: string) => {
+    if (typeof window !== "undefined") {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      return doc.body.textContent || "";
+    }
+    return html.replace(/<[^>]*>?/gm, '');
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
@@ -659,29 +783,41 @@ function SignalementsTable({
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contenu</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Auteur</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Signalements</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dernier signalement</th>
             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {signalements.map((signalement) => (
-            <tr key={signalement.id} className="hover:bg-gray-50">
+          {groups.map((group) => (
+            <tr key={group.contentId} className="hover:bg-gray-50">
               <td className="px-6 py-4 whitespace-nowrap">
-                <Badge variant={signalement.type === "post" ? "outline" : "secondary"} className={
-                  signalement.type === "post" 
+                <Badge variant={group.type === "post" ? "outline" : "secondary"} className={
+                  group.type === "post" 
                     ? "border-orange-200 text-orange-700 bg-orange-50" 
                     : "border-purple-200 text-purple-700 bg-purple-50"
                 }>
-                  {signalement.type === "post" ? "Post" : "Commentaire"}
+                  {group.type === "post" ? "Post" : "Commentaire"}
                 </Badge>
               </td>
               <td className="px-6 py-4">
-                <div className="max-w-xs truncate">
-                  {signalement.titre ? (
-                    <p className="font-medium text-gray-800 truncate">{signalement.titre}</p>
+                <div className="max-w-xs">
+                  {group.type === "post" && group.postData ? (
+                    <>
+                      <p className="font-medium text-gray-800 line-clamp-1">{group.postData.titre}</p>
+                      <p className="text-gray-600 text-sm line-clamp-1">
+                        {stripHtml(group.postData.contenu)}
+                      </p>
+                    </>
+                  ) : group.type === "commentaire" && group.commentaireData ? (
+                    <>
+                      <p className="font-medium text-gray-800 line-clamp-1">
+                        Re: {group.commentaireData.postTitre}
+                      </p>
+                      <p className="text-gray-600 text-sm line-clamp-1">{group.commentaireData.contenu}</p>
+                    </>
                   ) : (
-                    <p className="text-gray-600 truncate">{signalement.contenu}</p>
+                    <p className="text-gray-600 line-clamp-1">Contenu non disponible</p>
                   )}
                 </div>
               </td>
@@ -690,29 +826,18 @@ function SignalementsTable({
                   <Avatar className="h-8 w-8 mr-2">
                     <User className="h-4 w-4 text-gray-400" />
                   </Avatar>
-                  <span className="text-sm text-gray-700">{signalement.auteurNom}</span>
+                  <span className="text-sm text-gray-700">{group.auteurNom}</span>
                 </div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {formatDistanceToNow(new Date(signalement.date), { addSuffix: true, locale: fr })}
-              </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <Badge variant={
-                  signalement.status === "en_attente" 
-                    ? "outline" 
-                    : signalement.status === "traité" 
-                      ? "default" 
-                      : "secondary"
-                } className={
-                  signalement.status === "en_attente" 
-                    ? "border-yellow-200 text-yellow-700 bg-yellow-50" 
-                    : signalement.status === "traité" 
-                      ? "bg-green-100 text-green-700 border-0" 
-                      : "bg-gray-100 text-gray-700 border-0"
-                }>
-                  {signalement.status === "en_attente" ? "En attente" : 
-                  signalement.status === "traité" ? "Traité" : "Ignoré"}
+                <Badge className="bg-blue-100 text-blue-800">
+                  {group.count} {group.count > 1 ? "signalements" : "signalement"}
                 </Badge>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {group.signalements[0]?.date ? 
+                  formatDistanceToNow(new Date(group.signalements[0].date), { addSuffix: true, locale: fr }) : 
+                  "Date inconnue"}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right">
                 <div className="flex items-center justify-end space-x-2">
@@ -720,7 +845,7 @@ function SignalementsTable({
                     variant="ghost" 
                     size="sm" 
                     className="text-blue-600 hover:text-blue-800 h-8 w-8 p-0"
-                    onClick={() => onView(signalement)}
+                    onClick={() => onView(group)}
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
@@ -728,7 +853,7 @@ function SignalementsTable({
                     variant="ghost" 
                     size="sm" 
                     className="text-orange-600 hover:text-orange-800 h-8 w-8 p-0"
-                    onClick={() => onWarn(signalement)}
+                    onClick={() => onWarn(group)}
                   >
                     <Bell className="h-4 w-4" />
                   </Button>
@@ -736,7 +861,7 @@ function SignalementsTable({
                     variant="ghost" 
                     size="sm" 
                     className="text-red-600 hover:text-red-800 h-8 w-8 p-0"
-                    onClick={() => onDelete(signalement)}
+                    onClick={() => onDelete(group)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
