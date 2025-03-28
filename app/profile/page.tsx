@@ -56,7 +56,7 @@ export default function ProfilePage() {
     if (!session?.user?.id) return;
 
     try {
-      const response = await fetch(`/api/posts?creatorId=${session.user.id}`);
+      const response = await fetch(`/api/posts/get?creatorId=${session.user.id}`);
       if (!response.ok) {
         throw new Error("Erreur lors de la récupération des posts");
       }
@@ -133,7 +133,7 @@ export default function ProfilePage() {
     };
 
     try {
-      const response = await fetch("/api/posts", {
+      const response = await fetch("/api/posts/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(postData),
