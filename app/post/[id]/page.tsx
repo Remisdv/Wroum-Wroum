@@ -52,6 +52,7 @@ interface Comment {
   user?: {
     name: string;
     id?: string;
+    photoProfil?: string;
   };
   signalements: any[];
 }
@@ -64,10 +65,13 @@ interface Post {
   nbLikes: number;
   nbCommentaires: number;
   userId?: string;
-  user?: {
+  user: {
     name: string;
     id: string;
+    photoProfil: string;
   };
+  auteur?: string;
+  
 }
 
 export default function PostPage({ params }: { params: { id: string } }) {
@@ -97,6 +101,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
   const [isCopied, setIsCopied] = useState(false);
   const [showReactions, setShowReactions] = useState<Record<string, boolean>>({});
 
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/auth");
@@ -110,6 +115,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
         if (!response.ok) throw new Error("Post introuvable");
     
         const data: Post = await response.json();
+
         setPost(data);
         setLikesCount(data.nbLikes);
     
@@ -485,6 +491,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
   }
 
   const isAuthor = post.userId === session?.user?.id;
+  
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
@@ -535,12 +542,18 @@ export default function PostPage({ params }: { params: { id: string } }) {
               {/* Auteur et date */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10 border-2 border-blue-100">
-                    <User className="h-5 w-5 text-gray-400" />
-                  </Avatar>
+                <Avatar className="w-12 h-12 border-2 border-gray-200 group-hover:border-blue-400 transition-all">
+                        {post.user.photoProfil ? (
+                          <img 
+                            src={post.user.photoProfil} 
+                            alt={post.auteur} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : null}
+                      </Avatar>
                   <div>
                     <div className="font-medium text-gray-800">
-                      {post.user?.name || "Utilisateur"}
+                      {post.auteur || "Utilisateur"}
                       {isAuthor && <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Vous</span>}
                     </div>
                     <div className="text-sm text-gray-500 flex items-center gap-1">
@@ -764,12 +777,14 @@ export default function PostPage({ params }: { params: { id: string } }) {
                 >
                   <Card className="p-4 mb-6 border-blue-100 bg-white shadow-md">
                     <div className="flex items-start gap-3">
-                      <Avatar className="w-10 h-10 border-2 border-blue-100">
-                        {session?.user?.image ? (
-                          <img src={session.user.image} alt="Avatar" />
-                        ) : (
-                          <User className="h-5 w-5 text-gray-400" />
-                        )}
+                    <Avatar className="w-12 h-12 border-2 border-gray-200 group-hover:border-blue-400 transition-all">
+                        {post.user.photoProfil ? (
+                          <img 
+                            src={post.user.photoProfil} 
+                            alt={post.auteur} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : null}
                       </Avatar>
                       <div className="flex-1">
                         <div className="bg-gray-50 rounded-lg p-1">
@@ -840,9 +855,15 @@ export default function PostPage({ params }: { params: { id: string } }) {
                   >
                     <Card className="p-4 bg-white hover:shadow-md transition-shadow border border-gray-100">
                       <div className="flex gap-3">
-                        <Avatar className="w-10 h-10 border-2 border-gray-200">
-                          <User className="h-5 w-5 text-gray-400" />
-                        </Avatar>
+                      <Avatar className="w-12 h-12 border-2 border-gray-200 group-hover:border-blue-400 transition-all">
+                        {comment.user?.photoProfil ? (
+                          <img 
+                            src={comment.user.photoProfil} 
+                            alt={comment.user.name} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : null}
+                      </Avatar>
                         <div className="flex-1">
                           <div className="flex justify-between items-start">
                             <div>

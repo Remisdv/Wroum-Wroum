@@ -40,7 +40,13 @@ export async function GET(req: Request) {
           }
         : undefined,
       include: { 
-        user: true,
+        user:{
+          select: {
+            nom: true,
+            id: true,
+            photoProfil: true,
+          }
+        },
       },
     });
 
@@ -69,6 +75,11 @@ export async function GET(req: Request) {
       date: post.date,
       nbLikes: Array.isArray(post.likes) ? post.likes.length : 0,
       nbCommentaires: Array.isArray(post.commentaires) ? post.commentaires.length : 0,
+      user: {
+        id: post.user?.id,
+        name: post.user?.nom,
+        photoProfil: post.user?.photoProfil,
+      },
     }));
 
     return NextResponse.json(accueilPosts);
@@ -90,7 +101,15 @@ export async function GET_BY_ID(req: Request) {
 
     const post = await prisma.post.findUnique({
       where: { id: postId },
-      include: { user: true },
+      include: { 
+        user: {
+          select:{ 
+            nom: true,
+            id: true,
+            photoProfil: true,
+           },
+        },
+      },
     });
 
     if (!post) {
@@ -99,12 +118,17 @@ export async function GET_BY_ID(req: Request) {
 
     const postDetails = {
       id: post.id,
-      auteur: post.user.nom,
+      auteur: post.user?.nom,
       titre: post.titre,
       contenu: post.contenu,
       date: post.date,
       nbCommentaires: Array.isArray(post.commentaires) ? post.commentaires.length : 0,
       nbLikes: Array.isArray(post.likes) ? post.likes.length : 0,
+      user: {
+        id: post.user?.id,
+        name: post.user?.nom,
+        photoProfil: post.user?.photoProfil,
+      },
     };
 
     return NextResponse.json(postDetails);
@@ -119,7 +143,15 @@ export async function GET_BY_CREATOR(req: Request, creatorId: string, userId: st
   try {
     const posts = await prisma.post.findMany({
       where: { userId: creatorId },
-      include: { user: true },
+      include: { 
+        user: {
+          select:{
+            nom: true,
+            id: true,
+            photoProfil: true,
+          }
+        },
+      },
     });
 
     const userPosts = posts.map(post => ({
@@ -130,6 +162,11 @@ export async function GET_BY_CREATOR(req: Request, creatorId: string, userId: st
       date: post.date,
       nbLikes: Array.isArray(post.likes) ? post.likes.length : 0,
       isOwner: userId === creatorId,
+      user: {
+        id: post.user?.id,
+        name: post.user?.nom,
+        photoProfil: post.user?.photoProfil,
+      },
     }));
 
     return NextResponse.json(userPosts);
