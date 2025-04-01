@@ -43,12 +43,14 @@ export default function Home() {
   const [showFilters, setShowFilters] = useState(false);
   const feedRef = useRef<HTMLDivElement>(null);
   const [authorProfiles, setAuthorProfiles] = useState<{[key: string]: string}>({});
-
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
+  const [selectedSort, setSelectedSort] = useState<string>("recent");
 
   const fetchPosts = async (page: number) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/posts/get?page=${page}&pageSize=3`);
+      console.log(`Fetching posts with page=${page} and period=${selectedPeriod}`);
+      const response = await fetch(`/api/posts/get?page=${page}&pageSize=3&period=${selectedPeriod}&sort=${selectedSort}`);
       const data: Post[] = await response.json();
 
       if (data.length === 0) {
@@ -110,10 +112,12 @@ export default function Home() {
 
 
   useEffect(() => {
+    console.log("Appel initial de fetchPosts avec page :", page, "et période :", selectedPeriod);
     fetchPosts(page);
-  }, [page]);
+  }, [page, selectedPeriod, selectedSort]);
 
   const handleLoadMore = () => {
+    console.log("Bouton 'Voir plus d'articles' cliqué");
     if (hasMore && !isLoading) {
       setPage((prevPage) => prevPage + 1);
       
@@ -161,6 +165,24 @@ export default function Home() {
           : post
       )
     );
+  };
+
+  // ça c'est pour le tri par date sur l'accueil
+  const handlePeriodChange = (period: string) => {
+    
+    console.log("Changement de période :", period);
+    setSelectedPeriod(period);
+    setPage(1); 
+    setPosts([]); 
+    setHasMore(true); 
+  };
+
+  const handleSortChange = (sort: string) => {
+    console.log("Changement de tri :", sort);
+    setSelectedSort(sort);
+    setPage(1);
+    setPosts([]); 
+    setHasMore(true);
   };
 
   return (
@@ -240,20 +262,31 @@ export default function Home() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Trier par</label>
-                      <select className="w-full rounded-md border-gray-300 shadow-sm p-2 text-sm">
-                        <option>Les plus récents</option>
-                        <option>Les plus populaires</option>
-                        <option>Les plus commentés</option>
+                      <select
+                        className="w-full rounded-md border-gray-300 shadow-sm p-2 text-sm"
+                        value={selectedSort}
+                        onChange={(e) => handleSortChange(e.target.value)}
+                      >
+                        <option value="recent">Les plus récents</option>
+                        <option value="popular">Les plus populaires</option>
+                        <option value="commented">Les plus commentés</option>
                       </select>
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Période</label>
-                      <select className="w-full rounded-md border-gray-300 shadow-sm p-2 text-sm">
-                        <option>Aujourd'hui</option>
-                        <option>Cette semaine</option>
-                        <option>Ce mois</option>
-                        <option>Toutes les dates</option>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Période</label>
+                    <select
+                      className="w-full rounded-md border-gray-300 shadow-sm p-2 text-sm"
+                      value={selectedPeriod}
+                      onChange={(e) => {
+                        console.log("Période sélectionnée :", e.target.value);
+                        handlePeriodChange(e.target.value)
+                      }}
+                    >
+                        <option value="today">Aujourd'hui</option>
+                        <option value="week">Cette semaine</option>
+                        <option value="month">Ce mois</option>
+                        <option value="all">Toutes les dates</option>
                       </select>
                     </div>
                     
