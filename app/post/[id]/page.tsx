@@ -40,7 +40,13 @@ declare module "next-auth" {
   }
 
   interface Session {
-    user: User;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      image?: string;
+      role?: string;
+    }
   }
 }
 
@@ -147,7 +153,6 @@ export default function PostPage({ params }: { params: { id: string } }) {
           throw new Error("Erreur lors de la récupération des commentaires");
         }
         const data = await response.json();
-        console.log("Commentaires reçus:", data); // Log pour voir la structure
         setComments(data);
       } catch (error) {
         console.error("Erreur lors de la récupération des commentaires :", error);
@@ -777,14 +782,12 @@ export default function PostPage({ params }: { params: { id: string } }) {
                 >
                   <Card className="p-4 mb-6 border-blue-100 bg-white shadow-md">
                     <div className="flex items-start gap-3">
-                    <Avatar className="w-12 h-12 border-2 border-gray-200 group-hover:border-blue-400 transition-all">
-                        {post.user.photoProfil ? (
-                          <img 
-                            src={post.user.photoProfil} 
-                            alt={post.auteur} 
-                            className="w-full h-full object-cover"
-                          />
-                        ) : null}
+                    <Avatar className="w-10 h-10 border-2 border-blue-100">
+                        {session?.user?.image ? (
+                          <img src={session.user.image} alt="Avatar" />
+                        ) : (
+                          <User className="h-5 w-5 text-gray-400" />
+                        )}
                       </Avatar>
                       <div className="flex-1">
                         <div className="bg-gray-50 rounded-lg p-1">
