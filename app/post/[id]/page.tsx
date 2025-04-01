@@ -49,6 +49,7 @@ interface Post {
     name: string;
     id: string;
   };
+  auteur?: string; // Added the 'auteur' property
 }
 
 export default function PostPage({ params }: { params: { id: string } }) {
@@ -72,6 +73,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
   const [isCopied, setIsCopied] = useState(false);
   const [showReactions, setShowReactions] = useState<Record<string, boolean>>({});
 
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/auth");
@@ -85,6 +87,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
         if (!response.ok) throw new Error("Post introuvable");
     
         const data: Post = await response.json();
+
         setPost(data);
         setLikesCount(data.nbLikes);
     
@@ -426,7 +429,7 @@ export default function PostPage({ params }: { params: { id: string } }) {
                   </Avatar>
                   <div>
                     <div className="font-medium text-gray-800">
-                      {post.user?.name || "Utilisateur"}
+                      {post.auteur || "Utilisateur"}
                       {isAuthor && <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Vous</span>}
                     </div>
                     <div className="text-sm text-gray-500 flex items-center gap-1">

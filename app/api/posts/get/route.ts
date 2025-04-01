@@ -99,7 +99,7 @@ export async function GET_BY_ID(req: Request) {
 
     const postDetails = {
       id: post.id,
-      auteur: post.user.nom,
+      auteur: post.user?.nom,
       titre: post.titre,
       contenu: post.contenu,
       date: post.date,
