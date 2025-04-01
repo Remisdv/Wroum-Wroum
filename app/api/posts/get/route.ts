@@ -9,29 +9,67 @@ export async function GET(req: Request) {
     const postId = searchParams.get('postId');
     const userId = searchParams.get('userId');
     const creatorId = searchParams.get('creatorId');
+    const period = searchParams.get('period');
+    const sort = searchParams.get('sort');
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const pageSize = 6;
 
     if (postId) return await GET_BY_ID(req);
     if (creatorId) return await GET_BY_CREATOR(req, creatorId, userId);
 
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const pageSize = 6;
+    // Calculer la date de début en fonction de la période
+    let startDate: Date | undefined;
+    if (period === "today") {
+      startDate = new Date();
+      startDate.setHours(0, 0, 0, 0); // Début de la journée
+    } else if (period === "week") {
+      startDate = new Date();
+      startDate.setDate(startDate.getDate() - 7); // Derniers 7 jours
+    } else if (period === "month") {
+      startDate = new Date();
+      startDate.setMonth(startDate.getMonth() - 1); // Dernier mois
+    }
+
 
     const posts = await prisma.post.findMany({
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-      include: { user: true },
+      where: startDate
+        ? {
+            date: {
+              gte: startDate, // Posts à partir de `startDate`
+            },
+          }
+        : undefined,
+      include: { 
+        user: true,
+      },
     });
 
-    const accueilPosts = posts.map(post => ({
+    const postsWithCounts = posts.map(post => ({
+      ...post,
+      nbLikes: Array.isArray(post.likes) ? post.likes.length : 0,
+      nbCommentaires: Array.isArray(post.commentaires) ? post.commentaires.length : 0,
+    }));
+
+    if (sort === "popular") {
+      postsWithCounts.sort((a, b) => b.nbLikes - a.nbLikes);
+    } else if (sort === "commented") {
+      postsWithCounts.sort((a, b) => b.nbCommentaires - a.nbCommentaires);
+    } else {
+      postsWithCounts.sort((a, b) => b.date.getTime() - a.date.getTime());
+    }
+
+    
+    const paginatedPosts = postsWithCounts.slice((page - 1) * pageSize, page * pageSize);
+
+    const accueilPosts = paginatedPosts.map(post => ({
       id: post.id,
       auteur: post.user.nom,
       titre: post.titre,
       contenu: post.contenu.substring(0, 100),
       date: post.date,
       nbLikes: Array.isArray(post.likes) ? post.likes.length : 0,
-      nbCommentaires: Array.isArray(post.commentaires) ? post.commentaires.length : 0, // 👈 Ajoute ceci
+      nbCommentaires: Array.isArray(post.commentaires) ? post.commentaires.length : 0,
     }));
-    
 
     return NextResponse.json(accueilPosts);
 
