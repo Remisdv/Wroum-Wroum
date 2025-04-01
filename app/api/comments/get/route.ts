@@ -26,7 +26,8 @@ export async function GET(req: Request) {
               return {
                 ...comment,
                 user: {
-                  name: user?.nom || "Utilisateur inconnu"
+                  name: user?.nom || "Utilisateur inconnu",
+                  photoProfil: user?.photoProfil || null,
                 }
               };
             })
