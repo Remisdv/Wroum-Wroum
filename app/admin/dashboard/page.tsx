@@ -556,12 +556,17 @@ export default function AdminDashboard() {
               ) : selectedGroup?.type === "commentaire" && selectedGroup?.commentaireData ? (
                 <>
                   <h4 className="font-medium text-gray-900 mb-2">
-                    Commentaire sur : {selectedGroup.commentaireData.postTitre}
+                    Commentaire sur : {selectedGroup.commentaireData.postTitre || "Post inconnu"}
                   </h4>
                   <div className="prose prose-sm max-w-none text-gray-700 mb-4 p-3 bg-white rounded border border-gray-200">
-                    {selectedGroup.commentaireData.contenu}
+                    {selectedGroup.commentaireData.contenu || "[Contenu du commentaire non disponible]"}
                   </div>
                 </>
+              ) : selectedGroup?.type === "commentaire" ? (
+                <div className="bg-yellow-50 p-3 rounded border border-yellow-200 text-yellow-800">
+                  <p className="text-sm font-medium">Commentaire non trouvé</p>
+                  <p className="text-xs">Le commentaire a peut-être été supprimé ou l'ID du commentaire ({selectedGroup.commentId}) n'est pas correctement enregistré</p>
+                </div>
               ) : (
                 <p className="text-gray-600">Contenu non disponible</p>
               )}
@@ -812,10 +817,16 @@ function SignalementsGroupTable({
                   ) : group.type === "commentaire" && group.commentaireData ? (
                     <>
                       <p className="font-medium text-gray-800 line-clamp-1">
-                        Re: {group.commentaireData.postTitre}
+                        Re: {group.commentaireData.postTitre || "Post inconnu"}
                       </p>
-                      <p className="text-gray-600 text-sm line-clamp-1">{group.commentaireData.contenu}</p>
+                      <p className="text-gray-600 text-sm line-clamp-1">
+                        {group.commentaireData.contenu || "[Commentaire non disponible]"}
+                      </p>
                     </>
+                  ) : group.type === "commentaire" ? (
+                    <div className="text-yellow-600">
+                      <p className="line-clamp-1">Commentaire non trouvé (ID: {group.commentId})</p>
+                    </div>
                   ) : (
                     <p className="text-gray-600 line-clamp-1">Contenu non disponible</p>
                   )}
