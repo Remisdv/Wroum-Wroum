@@ -14,6 +14,7 @@ import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 interface Post {
   id: string;
@@ -25,12 +26,8 @@ interface Post {
   nbCommentaires?: number;
   auteurPhoto?: string;
 }
-const categories = [
-  { name: "Tous", icon: <BookOpen className="w-4 h-4" /> },
-  { name: "Tendances", icon: <TrendingUp className="w-4 h-4" /> },
-  { name: "Actualités", icon: <Award className="w-4 h-4" /> },
-  { name: "Conseils", icon: <Bookmark className="w-4 h-4" /> },
-];
+
+
 
 export default function Home() {
   const router = useRouter();
@@ -45,17 +42,54 @@ export default function Home() {
   const [authorProfiles, setAuthorProfiles] = useState<{[key: string]: string}>({});
   const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
   const [selectedSort, setSelectedSort] = useState<string>("recent");
+  const [showFollowedPosts, setShowFollowedPosts] = useState(false);
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
 
+  const categories = [
+    {
+      name: "Tous",
+      icon: <BookOpen className="w-4 h-4" />,
+      action: () => {
+        setShowFollowedPosts(false); // Désactive l'affichage des abonnements
+        setPage(1); // Réinitialise la pagination
+        setPosts([]); // Réinitialise les posts
+        setHasMore(true); // Réinitialise l'état de "voir plus"
+      },
+    },
+    {
+      name: "Voir mes abonnements",
+      icon: <Award className="w-4 h-4" />,
+      action: () => {
+        setShowFollowedPosts(true); // Active l'affichage des abonnements
+        setPage(1); // Réinitialise la pagination
+        setPosts([]); // Réinitialise les posts
+        setHasMore(true); // Réinitialise l'état de "voir plus"
+      },
+    },
+  ];
   const fetchPosts = async (page: number) => {
+    console.log("Id du user", userId);
     setIsLoading(true);
     try {
+      const endpoint = showFollowedPosts
+        ? `/api/posts/getFollowed?userId=${userId}&page=${page}&pageSize=3`
+        : `/api/posts/get?page=${page}&pageSize=3&period=${selectedPeriod}&sort=${selectedSort}`;
+
       console.log(`Fetching posts with page=${page} and period=${selectedPeriod}`);
-      const response = await fetch(`/api/posts/get?page=${page}&pageSize=3&period=${selectedPeriod}&sort=${selectedSort}`);
+      console.log(`Endpoint: ${endpoint}`);
+
+      const response = await fetch(endpoint);
       const data: Post[] = await response.json();
 
+      
+    console.log("📥 Données reçues de l'API :", data);
+
       if (data.length === 0) {
+        console.log("ℹ️ Aucun post récupéré.");
         setHasMore(false);
       } else {
+        console.log("✅ Posts récupérés :", data);
         setPosts((prevPosts) => {
           const existingIds = new Set(prevPosts.map((post) => post.id));
           const newPosts = data.filter((post) => !existingIds.has(post.id));
@@ -112,9 +146,14 @@ export default function Home() {
 
 
   useEffect(() => {
-    console.log("Appel initial de fetchPosts avec page :", page, "et période :", selectedPeriod);
+    console.log("📥 Chargement des posts :", {
+      page,
+      selectedPeriod,
+      selectedSort,
+      showFollowedPosts,
+    });
     fetchPosts(page);
-  }, [page, selectedPeriod, selectedSort]);
+  }, [page, selectedPeriod, selectedSort, showFollowedPosts]);
 
   const handleLoadMore = () => {
     console.log("Bouton 'Voir plus d'articles' cliqué");
@@ -185,6 +224,16 @@ export default function Home() {
     setHasMore(true);
   };
 
+const resetFilters = () => {
+  setSelectedSort("recent"); // Réinitialise le tri
+  setSelectedPeriod("all"); // Réinitialise la période
+  setActiveCategory("Tous"); // Réinitialise la catégorie active
+  setShowFollowedPosts(false); // Désactive l'affichage des abonnements
+  setPage(1); // Réinitialise la pagination
+  setPosts([]); // Réinitialise les posts
+  setHasMore(true); // Réinitialise l'état de "voir plus"
+};
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
       <NavBar />
@@ -232,19 +281,25 @@ export default function Home() {
           <div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
             {categories.map((category) => (
               <Button
-                key={category.name}
-                variant={activeCategory === category.name ? "default" : "outline"}
-                size="sm"
-                className={`flex items-center gap-1.5 rounded-full px-4 py-2 ${
-                  activeCategory === category.name 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-                }`}
-                onClick={() => setActiveCategory(category.name)}
-              >
-                {category.icon}
-                {category.name}
-              </Button>
+              key={category.name}
+              variant={activeCategory === category.name ? "default" : "outline"}
+              size="sm"
+              className={`flex items-center gap-1.5 rounded-full px-4 py-2 ${
+                activeCategory === category.name 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+              }`}
+              onClick={() => {
+                setActiveCategory(category.name);
+                category.action(); // Exécute l'action associée (activer/désactiver les abonnements)
+                setPage(1); // Réinitialise la pagination
+                setPosts([]); // Réinitialise les posts
+                setHasMore(true); // Réinitialise l'état de "voir plus"
+              }}
+            >
+              {category.icon}
+              {category.name}
+            </Button>
             ))}
           </div>
           
@@ -290,16 +345,6 @@ export default function Home() {
                       </select>
                     </div>
                     
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Marque</label>
-                      <select className="w-full rounded-md border-gray-300 shadow-sm p-2 text-sm">
-                        <option>Toutes</option>
-                        <option>Renault</option>
-                        <option>Peugeot</option>
-                        <option>Citroën</option>
-                        <option>BMW</option>
-                      </select>
-                    </div>
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
@@ -313,8 +358,14 @@ export default function Home() {
                   </div>
                   
                   <div className="flex justify-end mt-4">
-                    <Button size="sm" variant="outline" className="mr-2">Réinitialiser</Button>
-                    <Button size="sm" className="bg-blue-600">Appliquer</Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mr-2"
+                      onClick={resetFilters} // Appelle la fonction de réinitialisation
+                    >
+                      Réinitialiser
+                    </Button>
                   </div>
                 </div>
               </motion.div>

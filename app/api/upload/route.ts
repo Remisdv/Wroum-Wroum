@@ -8,13 +8,9 @@ const prisma = new PrismaClient();
 export async function POST(req: Request) {
     try {
         const formData = await req.formData();
-        console.log("FormData reçu :", formData);
 
         const file = formData.get("file") as File;
         const userId = formData.get("userId") as string;
-
-        console.log("Fichier reçu :", file);
-        console.log("ID utilisateur :", userId);
 
         if (!file) {
             return NextResponse.json({ error: "Aucun fichier reçu" }, { status: 400 });
@@ -35,7 +31,6 @@ export async function POST(req: Request) {
         }
 
         const oldPhotoUrl = existingUser.photoProfil;
-        console.log("Ancienne photo de profil :", oldPhotoUrl);
 
         // Enregistrer l'image dans le dossier "public/uploads"
         const bytes = await file.arrayBuffer();
@@ -57,11 +52,10 @@ export async function POST(req: Request) {
         console.log("Utilisateur mis à jour :", user);
 
         // Supprimer l'ancienne photo si elle existe et n'est pas la photo par défaut
-        if (oldPhotoUrl && oldPhotoUrl !== "/uploads/default-profile.JPEG") {
+        if (oldPhotoUrl && oldPhotoUrl !== "/default-profile.JPEG") {
             const oldFilePath = path.join(process.cwd(), "public", oldPhotoUrl);
             try {
                 await unlink(oldFilePath); // Supprimer le fichier
-                console.log("Ancienne photo supprimée :", oldFilePath);
             } catch (error) {
                 console.error("Erreur lors de la suppression de l'ancienne photo :", error);
             }
