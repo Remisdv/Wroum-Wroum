@@ -13,16 +13,17 @@ interface PrismaSignalement {
   contenu: string;
   date: Date;
   status: string;
-  // Ajout du champ commentId manquant dans le modèle
-  commentId?: number;
   motif?: string;
+  commentaireId?: number; // Ajouté pour le support du nouveau champ
 }
 
-interface Commentaire {
+// Interface améliorée pour les commentaires
+interface CommentaireType {
   commentaireId: number;
   userId: string;
   contenu: string;
   date: string;
+  signalements?: any[];
 }
 
 export async function GET(req: Request) {
@@ -39,10 +40,14 @@ export async function GET(req: Request) {
         let auteurNom = "Utilisateur inconnu";
         let postDetails = null;
         let commentDetails = null;
-
+        
+        // Utiliser directement le type et commentaireId
+        let displayType = signalement.type;
+        const commentaireId = signalement.commentaireId ?? null;
+        
         try {
           // Pour les posts signalés
-          if (signalement.postId && signalement.type === "post") {
+          if (signalement.postId && displayType === "post") {
             const post = await prisma.post.findUnique({
               where: { id: signalement.postId },
               include: { user: true }
@@ -60,37 +65,98 @@ export async function GET(req: Request) {
             }
           } 
           // Pour les commentaires signalés
-          else if (signalement.postId && signalement.type === "commentaire" && signalement.commentId) {
+          else if (signalement.postId && displayType === "commentaire") {
             const post = await prisma.post.findUnique({
               where: { id: signalement.postId }
             });
             
             if (post && post.commentaires) {
-              // Vérifier si commentaires est un tableau
+              // S'assurer que commentaires est un tableau
               const commentaires = Array.isArray(post.commentaires) ? post.commentaires : [];
               
-              // Parcourir les commentaires pour trouver celui qui correspond
-              const commentaire = commentaires.find(
-                (c: any) => c.commentaireId === signalement.commentId
-              );
+              // Logs améliorés pour débogage
+              console.log("DEBUG - Recherche commentaire:", {
+                signalementId: signalement.id,
+                commentaireId: signalement.commentaireId,
+                typeSignalementCID: typeof signalement.commentaireId
+              });
+
+              // Affichez les premiers commentaires pour débogage
+              if (commentaires.length > 0) {
+                console.log("Commentaires disponibles:", commentaires.slice(0, 3).map((c: any) => ({
+                  id: c.commentaireId,
+                  type: typeof c.commentaireId
+                })));
+              } else {
+                console.log("Aucun commentaire trouvé dans le post:", post.id);
+              }
+              
+              // Chercher le commentaire avec l'ID extrait
+              let commentaire = null;
+              
+              if (signalement.commentaireId) {
+                // Utiliser une comparaison numérique plus robuste
+                const foundComment = commentaires.find((c: any) => {
+                  const cid1 = Number(c.commentaireId);
+                  const cid2 = Number(signalement.commentaireId);
+                  const match = !isNaN(cid1) && !isNaN(cid2) && cid1 === cid2;
+                  
+                  if (match) {
+                    console.log("MATCH TROUVÉ:", { commentaireId: cid1, signalementCommentaireId: cid2 });
+                  }
+                  
+                  return match;
+                });
+                
+                // Cast du commentaire trouvé avec le bon type
+                if (foundComment && 
+                    typeof foundComment === 'object' && 
+                    'commentaireId' in foundComment && 
+                    'userId' in foundComment && 
+                    'contenu' in foundComment && 
+                    'date' in foundComment) {
+                  commentaire = foundComment as unknown as CommentaireType;
+                }
+              }
               
               if (commentaire) {
-                // Accéder de manière sécurisée aux propriétés du commentaire
-                const commentaireObj = commentaire as any;
-                auteurId = commentaireObj.userId || "";
+                // Accès sécurisé aux propriétés
+                auteurId = commentaire.userId;
                 
                 // Récupérer l'utilisateur du commentaire
-                if (commentaireObj.userId) {
+                if (commentaire.userId) {
                   const user = await prisma.user.findUnique({
-                    where: { id: commentaireObj.userId }
+                    where: { id: commentaire.userId }
                   });
                   auteurNom = user?.nom || "Utilisateur inconnu";
                 }
                 
                 commentDetails = {
-                  id: commentaireObj.commentaireId,
-                  contenu: commentaireObj.contenu,
-                  date: commentaireObj.date,
+                  id: commentaire.commentaireId,
+                  contenu: commentaire.contenu,
+                  date: commentaire.date,
+                  postTitre: post.titre,
+                  postId: post.id
+                };
+
+                console.log("Détails du commentaire trouvés:", {
+                  id: commentaire.commentaireId,
+                  contenu: commentaire.contenu.substring(0, 50) + "..."
+                });
+              } else {
+                // Si aucun commentaire trouvé avec l'ID spécifique
+                if (commentaireId !== null) {
+                  console.log(`Commentaire avec ID ${commentaireId} non trouvé dans le post ${post.id}`);
+                } else {
+                  console.log(`Ancien format de signalement sans ID de commentaire: ${signalement.id}`);
+                }
+                
+                // Pour les anciens formats de signalement sans ID de commentaire,
+                // on affiche au moins les informations du post parent
+                commentDetails = {
+                  id: 0,
+                  contenu: "[Contenu du commentaire non disponible]",
+                  date: signalement.date.toISOString(),
                   postTitre: post.titre,
                   postId: post.id
                 };
@@ -103,14 +169,14 @@ export async function GET(req: Request) {
 
         return {
           id: signalement.id,
-          type: signalement.type as "post" | "commentaire",
+          type: displayType as "post" | "commentaire",
           date: signalement.date.toISOString(),
           titre: signalement.titre || "",
           contenu: signalement.contenu || "",
           motif: signalement.titre || "Signalement", // Utiliser le titre comme motif s'il n'y a pas de champ motif
           userId: signalement.userId,
           postId: signalement.postId,
-          commentId: signalement.commentId,
+          commentId: commentaireId, // Utiliser l'ID extrait du type
           auteurId,
           auteurNom,
           status: signalement.status || "en_attente",
