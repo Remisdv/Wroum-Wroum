@@ -31,15 +31,17 @@ model User {
   photoProfil String? // URL de la photo de profil
   banniere    String? // URL de la bannière
 }
+
 model Signalement {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  type      String
-  postId    String?  @db.ObjectId
-  userId    String   @db.ObjectId
-  titre     String
-  contenu   String
-  date      DateTime @default(now())
-  status    String   @default("en_attente") // Ajoutez ce champ
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  type         String
+  postId       String?  @db.ObjectId
+  commentaireId Int?   
+  userId       String   @db.ObjectId
+  titre        String
+  contenu      String
+  date         DateTime @default(now())
+  status       String   @default("en_attente")
  
-  post      Post?    @relation("PostSignalements", fields: [postId], references: [id])
+  post         Post?    @relation("PostSignalements", fields: [postId], references: [id])
 }

@@ -44,7 +44,9 @@ export async function POST(req: Request) {
         // Créer un nouveau signalement
         const nouveauSignalement = await prisma.signalement.create({
             data: {
-                type: "commentaire", // Assurez-vous que le type est "commentaire"
+                // Stocker l'ID du commentaire directement dans le type
+                type: "commentaire",
+                commentaireId: Number(commentaireId),
                 postId,
                 userId,
                 titre,
